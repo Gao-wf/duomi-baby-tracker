@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多米 · 育儿小助手</title>
+<style>
+:root{
+  --bg:#FFF8F3; --card:#FFFFFF; --line:#F3E4D9;
+  --text:#4A3B33; --muted:#A08E84;
+  --primary:#F07B4F; --primary-soft:#FFE9DE;
+  --blue:#5BA8D9; --blue-soft:#E3F1FA;
+  --pink:#E87B9C; --pink-soft:#FBE4EC;
+  --green:#5FAF7A; --green-soft:#E4F3E9;
+  --yellow:#D9A441; --yellow-soft:#FAF0DA;
+  --danger:#E4685C; --danger-soft:#FCE9E7;
+  --shadow:0 2px 14px rgba(240,123,79,.10);
+  --r:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:40px}
+#app{max-width:720px;margin:0 auto;padding:14px 14px 0}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 6px 10px}
+.logo{font-size:21px;font-weight:800;color:var(--text)}
+.logo .emoji{font-size:24px}
+.baby-chip{background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px}
+
+/* 记录人身份条 */
+.userbar{display:flex;align-items:center;gap:8px;padding:2px 6px 10px;flex-wrap:wrap}
+.ub-label{font-size:12px;font-weight:800;color:var(--text-2);white-space:nowrap}
+.ub-btns{display:flex;gap:6px;flex:1;min-width:0}
+.ub-btn{flex:1;min-width:0;border:2px solid var(--border);background:#fff;border-radius:999px;padding:7px 2px;font-size:13px;font-weight:700;color:#666;cursor:pointer;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ub-btn:active{transform:scale(.96)}
+.ub-btn.on{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(108,140,255,.35)}
+.rec{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin-left:6px;white-space:nowrap}
+.rec-0{background:#E8F0FF;color:#4A7DFF}
+.rec-1{background:#FFEAF1;color:#E0579C}
+.rec-2{background:#FFF4D6;color:#B8860B}
+.rec-3{background:#E4F7EC;color:#1E9E62}
+
+/* alert banner */
+#alertBox{display:none;background:var(--danger);color:#fff;border-radius:var(--r);padding:14px 16px;margin:8px 0 14px;box-shadow:0 6px 18px rgba(228,104,92,.35);animation:pop .35s ease}
+#alertBox.show{display:flex;align-items:center;gap:10px}
+#alertBox .txt{flex:1;font-size:15px;font-weight:600}
+#alertBox .sub{display:block;font-size:12px;font-weight:400;opacity:.85;margin-top:2px}
+#alertBox button{background:rgba(255,255,255,.22);border:none;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+@keyframes pop{0%{transform:translateY(-8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+
+/* notice */
+.notice{background:var(--yellow-soft);border:1px dashed var(--yellow);color:#8a6a1f;font-size:12px;border-radius:12px;padding:10px 14px;margin:0 0 14px}
+
+/* overview */
+.ov-title{font-size:14px;font-weight:800;margin:4px 6px 10px;display:flex;justify-content:space-between;align-items:center}
+.ov-title small{font-weight:400;color:var(--muted);font-size:12px}
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.ov-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:var(--shadow)}
+.ov-card .ic{font-size:18px}
+.ov-card .t{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.ov-card .v{font-size:13.5px;font-weight:800}
+.ov-card.ov-jump{cursor:pointer;transition:transform .1s}
+.ov-card.ov-jump:active{transform:scale(.97)}
+.ov-card .ov-go{color:var(--primary);font-weight:800;margin-left:2px}
+.ov-card.ok{border-color:#CBE6D3;background:#F3FAF5}
+.ov-card.ok .v{color:var(--green)}
+.ov-card.overdue{border-color:#F3C9C4;background:#FDF3F1}
+.ov-card.overdue .v{color:var(--danger)}
+.ov-card.skip{opacity:.55}
+.ov-card.skip .t::after{content:"（疫苗日跳过）";color:var(--muted)}
+.ov-card.ig{opacity:.55}
+.ov-card.ig .t::after{content:"（已忽略）";color:var(--muted)}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;user-select:none}
+.card-head .ic{font-size:22px;width:26px;text-align:center}
+.card-head .tt{flex:1;font-size:15.5px;font-weight:800}
+.card-head .st{font-size:12px;color:var(--muted);background:#F7EFEA;padding:3px 10px;border-radius:999px}
+.card-head .arrow{color:var(--muted);font-size:12px;transition:transform .25s}
+.card.open .card-head .arrow{transform:rotate(180deg)}
+.card-body{display:none;padding:0 16px 16px;border-top:1px dashed var(--line)}
+.card.open .card-body{display:block}
+.card{scroll-margin-top:64px}
+
+/* forms & buttons */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row+.row{margin-top:10px}
+input[type=datetime-local],input[type=time],input[type=number],select,input[type=date]{
+  border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;font-size:14px;color:var(--text);background:#FFFDFB;outline:none;min-width:0
+}
+input:focus{border-color:var(--primary)}
+input[type=number]{width:84px}
+.lbl{font-size:12.5px;color:var(--muted);display:block;margin-bottom:3px}
+.btn{border:none;border-radius:11px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .1s,opacity .15s}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-pink{background:var(--pink);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-yellow{background:var(--yellow);color:#fff}
+.btn-ghost{background:#F4EDE8;color:var(--text)}
+.btn-outline{background:#fff;border:1.5px solid var(--line);color:var(--text)}
+.btn-danger{background:var(--danger-soft);color:var(--danger)}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:9px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.big-btn{flex:1;padding:14px;font-size:15px;border-radius:14px}
+.mini-stat{font-size:12px;color:var(--muted)}
+.amount-chips{display:flex;gap:8px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}
+.chip.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.next-feed{background:var(--primary-soft);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:13.5px}
+.next-feed b{color:var(--primary);font-size:17px}
+.next-feed .sub{color:var(--muted);font-size:12px;margin-top:2px}
+/* 跨天上一顿标记 */
+.crossday-tag{display:inline-block;background:#EEF1F6;color:#7A8699;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin-left:4px;white-space:nowrap}
+.li.crossday-li{background:#F6F8FB;border-radius:12px;margin-top:4px;border-bottom:none}
+
+/* lists */
+.list{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+.list-title{font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between}
+.list-title .del-all{color:var(--danger);cursor:pointer;font-weight:400}
+.li{display:flex;align-items:center;justify-content:space-between;padding:7px 2px;border-bottom:1px solid #F7EFEA;font-size:13.5px}
+.li:last-child{border-bottom:none}
+.li .time{font-weight:700;color:var(--text)}
+.li .meta{color:var(--muted);font-size:12px}
+.li .x{color:#D8C8BE;cursor:pointer;padding:2px 6px;font-size:13px}
+.li .x:hover{color:var(--danger)}
+.empty{color:#C9BBB2;font-size:13px;padding:8px 0;text-align:center}
+
+/* walk slots */
+.slot{background:#FBF6F1;border-radius:12px;padding:12px;margin-top:10px}
+.slot .slot-t{font-size:13px;font-weight:800;margin-bottom:8px}
+.slot .btns{display:flex;gap:8px}
+.slot .btns .btn{flex:1}
+
+/* vaccine table */
+.vaccine-legend{font-size:12px;color:var(--muted);margin:10px 0 6px}
+.vac-row{display:grid;grid-template-columns:96px 1fr 118px 34px;gap:6px;align-items:center;padding:7px 2px;border-bottom:1px solid #F7EFEA;font-size:13px}
+.vac-row:last-child{border-bottom:none}
+.vac-row .vname{font-weight:700;font-size:13px}
+.vac-row .dose{color:var(--muted);font-size:12px}
+.vac-row input[type=date]{width:100%;padding:5px 8px;font-size:12.5px}
+.vac-row.done{background:#F3FAF5;border-radius:10px;padding-left:8px}
+.vac-row.done .vname{color:var(--green)}
+.vac-row.done .dose::after{content:"✓";color:var(--green);margin-left:4px}
+.vac-row.est .dose{color:var(--yellow)}
+.vac-form{background:#FBF6F1;border-radius:12px;padding:12px;margin-top:10px}
+.vac-form .row{flex-wrap:nowrap}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;background:#F4EDE8;color:var(--muted)}
+.tag.est{background:var(--yellow-soft);color:#8a6a1f}
+
+/* milestone reference */
+.mref{margin-top:4px}
+.mref h4{font-size:14px;font-weight:800;margin:14px 0 6px;color:var(--text)}
+.mref h4 .ic{margin-right:4px}
+.mref ul{list-style:none}
+.mref li{font-size:13.5px;padding:4px 0 4px 20px;position:relative;color:#5A4A42}
+.mref li::before{content:"●";position:absolute;left:4px;top:6px;font-size:8px;color:var(--primary)}
+.mref .tip{background:var(--blue-soft);border-radius:12px;padding:10px 14px;font-size:13px;color:#3A6B8F;margin-top:12px}
+.mref .ref-banner{background:linear-gradient(135deg,var(--primary-soft),var(--pink-soft));border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--text);margin-bottom:4px}
+.mref .ref-vax{background:var(--yellow-soft);border-radius:8px;padding:6px 10px;margin-top:4px;color:#7A5A12}
+.mref .ref-vax::before{display:none}
+.mref .ref-ahead{margin:18px 0 6px;padding:8px 12px;background:linear-gradient(135deg,#fff3ea,#fdeede);border:1px solid #f3d9c4;border-radius:10px;font-size:13.5px;font-weight:800;color:#c9742f}
+
+/* footer */
+footer{text-align:center;font-size:12px;color:#C4B4AA;padding:18px 0 8px;line-height:1.8}
+
+/* ===== 活动分类 ===== */
+.act-group{margin-bottom:16px}
+.act-group-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.act-group-title .cnt{font-size:11px;color:var(--muted);font-weight:600}
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.act-item{display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.act-item:active{transform:scale(.97)}
+.act-item .an{flex:1;font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-item .an .ae{font-size:15px;margin-right:3px}
+.act-item .cnt{font-size:12px;font-weight:800;min-width:30px;text-align:center;background:#F7EFEA;border-radius:999px;padding:2px 8px;color:var(--text)}
+.act-item .plus{font-size:17px;font-weight:800;color:#fff;background:#D8C8BE;border-radius:999px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;line-height:1;flex:none;transition:all .15s}
+.act-item .plus:active{transform:scale(.9)}
+.act-group.blue .act-item.on{border-color:var(--blue);background:var(--blue-soft)}
+.act-group.blue .act-item.on .an{color:var(--blue)}
+.act-group.blue .act-item.on .cnt{background:var(--blue);color:#fff}
+.act-group.blue .act-item.on .plus{background:var(--blue)}
+.act-group.green .act-item.on{border-color:var(--green);background:var(--green-soft)}
+.act-group.green .act-item.on .an{color:var(--green)}
+.act-group.green .act-item.on .cnt{background:var(--green);color:#fff}
+.act-group.green .act-item.on .plus{background:var(--green)}
+.act-group.pink .act-item.on{border-color:var(--pink);background:var(--pink-soft)}
+.act-group.pink .act-item.on .an{color:var(--pink)}
+.act-group.pink .act-item.on .cnt{background:var(--pink);color:#fff}
+.act-group.pink .act-item.on .plus{background:var(--pink)}
+
+/* ===== 统计卡 ===== */
+.stat-card{background:#FBF6F1;border:1px dashed var(--line);border-radius:12px;padding:12px;margin-top:12px}
+.stat-card .list-title{margin-bottom:8px}
+.stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.stat-cell{flex:1;min-width:88px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.stat-cell .sv{font-size:15px;font-weight:800;color:var(--primary)}
+.stat-cell .sl{font-size:11px;color:var(--muted);margin-top:2px}
+.stat-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}
+.stat-table th,.stat-table td{border-bottom:1px solid #F3E4D9;padding:5px 4px;text-align:center}
+.stat-table th{color:var(--muted);font-weight:700;font-size:11.5px}
+.stat-table td:first-child{font-weight:700;color:var(--text)}
+.stat-table tr:last-child td{border-bottom:none}
+
+/* ===== 折叠历史 ===== */
+.collapse{margin-top:10px;border-top:1px dashed var(--line)}
+.coll-head{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;user-select:none}
+.coll-head .arrow{transition:transform .2s;font-size:11px;color:var(--muted)}
+.coll-head.open .arrow{transform:rotate(180deg)}
+.coll-body{display:none;border-top:1px dashed var(--line);padding-top:6px}
+.coll-body.open{display:block}
+.hist-date{font-size:12px;color:var(--muted);font-weight:700;margin:8px 0 2px}
+.hist-row{display:flex;align-items:center;justify-content:space-between;padding:4px 2px;border-bottom:1px dashed #F3E4D9;font-size:13px}
+.hist-row:last-child{border-bottom:none}
+
+/* ===== 忽略按钮 ===== */
+.btn-ignore{background:#F0F1F3;color:#7A7E85}
+
+/* ===== toast 轻提示 ===== */
+.toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%) translateY(16px);background:rgba(74,59,51,.94);color:#fff;font-size:13.5px;font-weight:600;padding:10px 18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transition:all .25s;z-index:99;max-width:86%;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== 修改按钮 ===== */
+.edit-btn{color:#6FA8DC;cursor:pointer;padding:2px 4px;font-size:13px;user-select:none;white-space:nowrap}
+.edit-btn:hover{color:#2F7DBF;font-weight:700}
+.li .ops,.hist-row .ops{display:inline-flex;align-items:center;gap:2px}
+
+/* ===== 编辑弹窗 ===== */
+#editOverlay{position:fixed;inset:0;background:rgba(60,40,30,.45);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
+.edit-box{background:#fff;border-radius:16px;padding:20px;width:min(92vw,360px);box-shadow:0 12px 40px rgba(60,40,30,.28);max-height:85vh;overflow:auto}
+.edit-title{font-weight:700;font-size:16px;margin-bottom:6px;color:#4A3B33}
+.edit-body label{display:block;font-size:12px;color:#8A7A70;margin:12px 0 4px}
+.edit-body input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #E8D9CE;border-radius:10px;font-size:14px;background:#FFF9F4;outline:none}
+.edit-body input:focus{border-color:#6FA8DC;background:#fff}
+.edit-btns{display:flex;gap:10px;margin-top:18px}
+.edit-btns .btn{flex:1}
+
+/* ===== 身高体重 ===== */
+.birth-chips{display:flex;gap:8px;margin-bottom:10px}
+.birth-chip{flex:1;background:var(--primary-soft);border-radius:10px;padding:10px;text-align:center}
+.birth-chip .bv{font-size:16px;font-weight:800;color:var(--primary)}
+.birth-chip .bl{font-size:11px;color:var(--muted)}
+.growth-chart{background:#FFFDFB;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
+.growth-chart .legend{font-size:11px;color:var(--muted);margin-bottom:4px;text-align:center}
+.growth-chart .legend b.w{color:var(--green)} .growth-chart .legend b.h{color:var(--blue)}
+.growth-chart svg{width:100%;height:auto;display:block}
+
+@media (max-width:560px){
+  .ov-grid{grid-template-columns:repeat(3,1fr)}
+  .vac-row{grid-template-columns:80px 1fr 112px 30px}
+}
+/* ===== APP 模式：顶部固定标题 + 底部固定导航 ===== */
+header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(6px);padding:12px 4px 10px;margin:-14px -14px 0;border-bottom:1px solid #f0e6d8}
+#app{padding-bottom:88px}
+.view{display:none}
+.view.active{display:block}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:720px;display:flex;background:#fffdf8;border-top:1px solid #f0e6d8;box-shadow:0 -4px 16px rgba(0,0,0,.06);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:60}
+.tabbar .tab{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:#9b8b78;font-size:11px;cursor:pointer}
+.tabbar .tab .ic{font-size:20px;line-height:1}
+.tabbar .tab.active{color:#e8884a}
+.tabbar .tab.active .ic{transform:scale(1.12)}
+@media (max-width:560px){.tabbar .tab .lb{font-size:10.5px}}
+/* 返回总览按钮（每个非首页视图顶部，吸顶固定，滚动时始终可见） */
+.view-back{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:4px;margin:0 0 12px;padding:11px 14px;background:#fffdf8;border-bottom:1px solid #f0e6d8;box-shadow:0 2px 8px rgba(0,0,0,.04);color:#e8884a;font-size:13px;font-weight:700;cursor:pointer}
+.view-back:active{background:#fff3ea}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo"><span class="emoji">👶</span> 多米的小日子</div>
+    <span class="baby-chip" id="babyChip">--</span>
+  </header>
+
+  <div class="userbar">
+    <span class="ub-label">👤 记录人</span>
+    <div class="ub-btns" id="userBar"></div>
+  </div>
+
+  <div id="alertBox">
+    <div class="txt"><span id="alertTitle"></span><span class="sub" id="alertSub"></span></div>
+    <button onclick="dismissAlerts()">知道了</button>
+  </div>
+
+  <div class="notice" id="noticeBar">
+    💡 提醒功能需要本页面保持打开才会响。想收到系统通知？点右上角/下方 <b>开启系统提醒</b> 按钮授权即可。
+  </div>
+
+  <div class="view active" id="view-overview">
+  <div class="ov-title">今日概览 <small><span id="todayStr"></span></small></div>
+  <div class="ov-grid" id="ovGrid"></div>
+
+  </div><!-- /view-overview -->
+  <div class="view" id="view-record">
+  <div class="view-back" onclick="showTab('overview')">‹ 返回总览</div>
+  <!-- 喂养 -->
+  <div class="card" id="card-feed">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🍼</span><span class="tt">喂养记录</span><span class="st" id="feedSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div style="flex:1;min-width:150px">
+          <span class="lbl">喂养时间（忘记了？改这里直接补录）</span>
+          <input type="datetime-local" id="feedTime" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <span class="lbl">奶量 (ml)</span>
+          <input type="number" id="feedAmt" value="130" min="10" max="400" style="width:100%">
+        </div>
+      </div>
+      <div class="row">
+        <div class="amount-chips">
+          <span class="chip on" data-amt="130" onclick="pickAmt(this)">130ml · 隔4小时</span>
+          <span class="chip" data-amt="170" onclick="pickAmt(this)">170ml · 隔5小时</span>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary big-btn" onclick="addFeeding()">＋ 记录这顿奶</button>
+      </div>
+      <div class="next-feed" id="nextFeed" style="display:none"></div>
+      <div class="list">
+        <div class="list-title">今日喂养</div>
+        <div id="feedList"></div>
+      </div>
+      <div class="collapse">
+        <div class="coll-head" onclick="toggleCollapse(this)">📁 历史喂养（一直保留） <span class="arrow">▼</span></div>
+        <div class="coll-body" id="feedHist"></div>
+      </div>
+      <div class="stat-card">
+        <div class="list-title">📊 本周喂养统计（近7天）</div>
+        <div class="stat-row">
+          <div class="stat-cell"><div class="sv" id="wkFeedCount">--</div><div class="sl">总次数</div></div>
+          <div class="stat-cell"><div class="sv" id="wkFeedTotal">--</div><div class="sl">总奶量</div></div>
+          <div class="stat-cell"><div class="sv" id="wkFeedAvg">--</div><div class="sl">日均奶量（参考）</div></div>
+        </div>
+        <table class="stat-table" id="wkFeedTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 大小便 -->
+  <div class="card" id="card-potty">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🚽</span><span class="tt">大小便记录</span><span class="st" id="pottySt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <button class="btn btn-yellow big-btn" onclick="addPotty('pee')">💦 小便 +1</button>
+        <button class="btn btn-green big-btn" onclick="addPotty('poop')">💩 大便 +1</button>
+      </div>
+      <div class="list">
+        <div class="list-title">今日记录 <span class="del-all" onclick="clearToday('potty')">清空今日</span></div>
+        <div id="pottyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 活动 -->
+  <div class="card" id="card-activity">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🏃</span><span class="tt">每日活动</span><span class="st" id="actSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <p class="mini-stat" style="margin-bottom:12px">点活动名变彩色（表示今天做过），再点 <b>＋1</b> 记一次次数。</p>
+      <div id="actGroups"></div>
+    </div>
+  </div>
+
+  <!-- 维生素 -->
+  <div class="card" id="card-vitamin">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">💊</span><span class="tt">维生素 AD · D3（隔天交替）</span><span class="st" id="vitSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="next-feed" id="vitTip" style="display:none"></div>
+      <div class="row">
+        <button class="btn btn-yellow big-btn" id="adBtn" onclick="setVit('ad')">喂 AD</button>
+        <button class="btn btn-blue big-btn" id="d3Btn" onclick="setVit('d3')">喂 D3</button>
+      </div>
+      <p class="mini-stat" style="margin-top:10px">⏰ 每日提醒时间：<b>上午 10:30</b> · AD 和 D3 <b>一天一种、隔天交替</b>：今天喂了这个，明天自动提醒喂另一个。</p>
+    </div>
+  </div>
+
+  <!-- 益生菌 -->
+  <div class="card" id="card-probiotic">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🦠</span><span class="tt">益生菌</span><span class="st" id="probSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-primary big-btn" id="probBtn" onclick="toggleProbiotic()">✅ 今天已喝益生菌</button>
+      <p class="mini-stat" style="margin-top:10px">⏰ 每日提醒时间：<b>下午 4:00</b> · 手工标记即可。</p>
+    </div>
+  </div>
+
+  <!-- 遛弯 -->
+  <div class="card" id="card-walk">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🌤️</span><span class="tt">出门遛弯</span><span class="st" id="walkSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="slot">
+        <div class="slot-t">☀️ 上午 9:30 <span class="tag" id="amTag">待定</span></div>
+        <div class="btns">
+          <button class="btn btn-green" onclick="setWalk('am','done')">✅ 遛了</button>
+          <button class="btn btn-ignore" onclick="setWalk('am','ignored')">⏭️ 忽略</button>
+          <button class="btn btn-ghost" onclick="setWalk('am','missed')">✖️ 未实施</button>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-t">🌇 下午 4:30 <span class="tag" id="pmTag">待定</span></div>
+        <div class="btns">
+          <button class="btn btn-green" onclick="setWalk('pm','done')">✅ 遛了</button>
+          <button class="btn btn-ignore" onclick="setWalk('pm','ignored')">⏭️ 忽略</button>
+          <button class="btn btn-ghost" onclick="setWalk('pm','missed')">✖️ 未实施</button>
+        </div>
+      </div>
+      <p class="mini-stat" style="margin-top:10px">💡 天气不好、有事出不了门就点「⏭️ 忽略」，当天不再提醒。</p>
+      <div class="list">
+        <div class="list-title">近 7 天遛弯统计 <span id="walkStat"></span></div>
+        <div id="walkList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 洗澡 -->
+  <div class="card" id="card-bath">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🛁</span><span class="tt">洗澡记录</span><span class="st" id="bathSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div id="bathVaxTip" class="next-feed" style="display:none;background:var(--yellow-soft)"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <button class="btn btn-blue big-btn" onclick="addBath('bath')">🚿 洗澡了</button>
+        <button class="btn btn-pink big-btn" onclick="addBath('hair')">💆 洗头了</button>
+        <button class="btn btn-yellow big-btn" onclick="addBath('lotion')">🧴 擦油/粉</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-ignore big-btn" id="bathIgnoreBtn" onclick="toggleBathIgnore()">⏭️ 今天不洗（忽略）</button>
+      </div>
+      <p class="mini-stat" style="margin-top:10px">⏰ 每日提醒时间：<b>晚上 8:00</b> · 打疫苗当天自动跳过；天冷或疫苗后不想洗，点「忽略」当天不再提醒。</p>
+      <div class="list">
+        <div class="list-title">今日记录 <span class="del-all" onclick="clearToday('bath')">清空今日</span></div>
+        <div id="bathList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 睡眠 -->
+  <div class="card" id="card-sleep">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">😴</span><span class="tt">睡眠记录</span><span class="st" id="sleepSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <button class="btn btn-blue big-btn" id="sleepStartBtn" onclick="startSleep()">😴 开始睡</button>
+        <button class="btn btn-green big-btn" id="sleepEndBtn" onclick="endSleep()">🌞 醒了</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div style="flex:1;min-width:130px">
+          <span class="lbl">补录睡眠时长（分钟）</span>
+          <input type="number" id="sleepMin" min="1" max="900" value="60" style="width:100%">
+        </div>
+        <button class="btn btn-ghost" onclick="addSleepManual()">＋ 补录一次</button>
+      </div>
+      <p class="mini-stat" style="margin-top:10px">⏱ 睡着了点「开始睡」，醒了点「醒了」自动记时长；没来得及就补录分钟数，点一次算一次。睡眠数据<b>永久保留</b>，历史可折叠查看。</p>
+      <div class="list">
+        <div class="list-title">今日睡眠</div>
+        <div id="sleepList"></div>
+      </div>
+      <div class="stat-card">
+        <div class="list-title">📊 本周睡眠统计（近7天）</div>
+        <div class="stat-row">
+          <div class="stat-cell"><div class="sv" id="wkSleepCount">--</div><div class="sl">总次数</div></div>
+          <div class="stat-cell"><div class="sv" id="wkSleepTotal">--</div><div class="sl">总时长</div></div>
+          <div class="stat-cell"><div class="sv" id="wkSleepAvg">--</div><div class="sl">日均睡眠</div></div>
+        </div>
+        <table class="stat-table" id="wkSleepTable"></table>
+      </div>
+      <div class="collapse">
+        <div class="coll-head" onclick="toggleCollapse(this)">📁 睡眠历史（备份保留） <span class="arrow">▼</span></div>
+        <div class="coll-body" id="sleepHist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 身高体重 -->
+  </div><!-- /view-record -->
+  <div class="view" id="view-food">
+  <div class="view-back" onclick="showTab('overview')">‹ 返回总览</div>
+  <div class="card" id="card-food">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">🍚</span><span class="tt">辅食记录</span><span class="st" id="foodSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <p class="vaccine-legend">宝宝开始吃辅食后，记录每次尝试的食物，便于观察接受度与过敏。进食量按阶段选填即可，反应/备注可记「无过敏 / 轻微腹泻 / 爱吃」等。</p>
+      <div class="row">
+        <div style="flex:1;min-width:110px"><span class="lbl">日期</span><input type="date" id="foodDate" style="width:100%"></div>
+        <div style="flex:1;min-width:110px"><span class="lbl">时间</span><input type="time" id="foodTime" style="width:100%"></div>
+        <div style="flex:1;min-width:120px"><span class="lbl">食物</span><input type="text" id="foodName" placeholder="米粉/南瓜泥" style="width:100%"></div>
+      </div>
+      <div class="row">
+        <div style="flex:1;min-width:120px"><span class="lbl">进食量</span>
+          <select id="foodAmt" style="width:100%">
+            <option value="尝一尝">尝一尝</option>
+            <option value="少量(1-2勺)">少量(1-2勺)</option>
+            <option value="半碗">半碗</option>
+            <option value="一碗">一碗</option>
+          </select>
+        </div>
+        <div style="flex:2;min-width:160px"><span class="lbl">反应/备注</span><input type="text" id="foodNote" placeholder="无过敏/爱吃/轻微腹泻" style="width:100%"></div>
+      </div>
+      <div class="row"><button class="btn btn-primary big-btn" onclick="addFood()">＋ 添加辅食记录</button></div>
+      <div class="list">
+        <div class="list-title">辅食记录</div>
+        <div id="foodList"></div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /view-food -->
+  <div class="view" id="view-growth">
+  <div class="view-back" onclick="showTab('overview')">‹ 返回总览</div>
+  <div class="card" id="card-growth">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">📏</span><span class="tt">身高体重</span><span class="st" id="growthSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="birth-chips">
+        <div class="birth-chip"><div class="bv" id="birthW">4.22 kg</div><div class="bl">出生体重</div></div>
+        <div class="birth-chip"><div class="bv" id="birthH">51.5 cm</div><div class="bl">出生身高</div></div>
+        <div style="display:flex;align-items:center"><button class="btn btn-outline btn-sm" onclick="editBirthSize()">✏️</button></div>
+      </div>
+      <div class="row">
+        <div style="flex:1;min-width:110px">
+          <span class="lbl">日期</span>
+          <input type="date" id="gDate" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:88px">
+          <span class="lbl">体重 (kg)</span>
+          <input type="number" id="gWeight" step="0.01" min="1" max="30" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:88px">
+          <span class="lbl">身高 (cm)</span>
+          <input type="number" id="gHeight" step="0.5" min="30" max="120" style="width:100%">
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary big-btn" onclick="addGrowth()">＋ 记录本周数据</button>
+      </div>
+      <p class="mini-stat" style="margin-top:8px">每周记录一次，数据<b>不能删除</b>，自动绘制生长曲线。</p>
+      <div class="growth-chart">
+        <div class="legend"><b class="w">● 体重</b> &nbsp; <b class="h">● 身高</b></div>
+        <div id="growthChart"></div>
+      </div>
+      <div class="list">
+        <div class="list-title">历史记录（不可删除）</div>
+        <div id="growthList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 疫苗 -->
+  <div class="card" id="card-vaccine">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">💉</span><span class="tt">疫苗接种计划</span><span class="st" id="vaxSt">--</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <p class="vaccine-legend">记录某剂疫苗的实际接种日期后，系统按国家免疫规划自动推算后续剂次（黄色为预计日期）。日期可随时修改，改后自动重新推算。打疫苗当天洗澡提醒会自动跳过。</p>
+      <div class="vac-form">
+        <div class="row">
+          <div style="flex:1">
+            <span class="lbl">疫苗</span>
+            <select id="vaxSel" style="width:100%"></select>
+          </div>
+          <div style="flex:1">
+            <span class="lbl">剂次</span>
+            <select id="doseSel" style="width:100%"></select>
+          </div>
+          <div style="width:150px">
+            <span class="lbl">接种日期</span>
+            <input type="date" id="vaxDate" style="width:100%">
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary big-btn" onclick="recordVaccine()">记录接种</button>
+        </div>
+      </div>
+      <div id="vaxList" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- 月龄参考 -->
+  </div><!-- /view-growth -->
+  <div class="view" id="view-more">
+  <div class="view-back" onclick="showTab('overview')">‹ 返回总览</div>
+  <div class="card" id="card-mref">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">📚</span><span class="tt" id="mrefTitle">成长参考</span><span class="st">对照看看</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="row" style="align-items:flex-end;background:var(--primary-soft);border-radius:10px;padding:8px 10px;margin-bottom:12px">
+        <div style="flex:1;min-width:150px">
+          <span class="lbl">🎂 多米的出生日期</span>
+          <input type="date" id="birthInput" style="width:100%" value="2026-04-14">
+        </div>
+        <button class="btn btn-primary" onclick="saveBirth()">保存</button>
+      </div>
+      <div id="mrefBody"></div>
+    </div>
+  </div>
+
+  <div class="card" id="card-mrefA1">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">📅</span><span class="tt" id="mrefA1Title">下月参考</span><span class="st">提前学习</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div id="mrefBodyA1"></div>
+    </div>
+  </div>
+
+  <div class="card" id="card-mrefA2">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">📅</span><span class="tt" id="mrefA2Title">下下月参考</span><span class="st">提前学习</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div id="mrefBodyA2"></div>
+    </div>
+  </div>
+
+  <div class="row" style="justify-content:center;margin:6px 0 4px">
+    <button class="btn btn-outline btn-sm" onclick="requestNotify()">🔔 开启系统提醒</button>
+    <button class="btn btn-outline btn-sm" onclick="exportData()">📤 导出数据</button>
+    <button class="btn btn-outline btn-sm" onclick="importData()">📥 导入数据</button>
+  </div>
+
+  <footer>
+    多米 · <span id="footerAge">4</span> 月龄育儿小助手<br>
+    数据保存在本浏览器中，页面需保持打开提醒才会响
+  </footer>
+  </div><!-- /view-more -->
+</div>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab active" data-view="overview" onclick="showTab('overview')"><span class="ic">🏠</span><span class="lb">总览</span></button>
+  <button class="tab" data-view="record" onclick="showTab('record')"><span class="ic">📋</span><span class="lb">记录</span></button>
+  <button class="tab" data-view="food" onclick="showTab('food')"><span class="ic">🍚</span><span class="lb">辅食</span></button>
+  <button class="tab" data-view="growth" onclick="showTab('growth')"><span class="ic">📈</span><span class="lb">成长</span></button>
+  <button class="tab" data-view="more" onclick="showTab('more')"><span class="ic">⚙️</span><span class="lb">更多</span></button>
+</nav>
+
+<!-- 编辑弹窗 -->
+<div id="editOverlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="edit-box">
+    <div class="edit-title" id="editTitle"></div>
+    <div class="edit-body" id="editBody"></div>
+    <div class="edit-btns">
+      <button class="btn btn-ghost" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="editSave()">保存</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="doImport(event)">
+
+<script>
+/* ================= 基础 ================= */
+const LS_KEY = 'duomi_baby_v1';
+const T = () => new Date();
+
+function pad(n){return String(n).padStart(2,'0')}
+function dstr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function todayStr(){return dstr(T())}
+function hm(d){return pad(d.getHours())+':'+pad(d.getMinutes())}
+function fmtDT(d){return pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+hm(d)}
+function toDT(s){ // 'YYYY-MM-DDTHH:MM' or date-only
+  if(!s) return null;
+  if(s.length===10) s += 'T00:00';
+  return new Date(s.replace(' ','T'));
+}
+function nowInput(){const d=T();d.setMinutes(d.getMinutes()-5);return dstr(d)+'T'+hm(d)}
+function nowDateInput(){return dstr(T())}
+function addMonthsStr(dateStr, months){
+  const d = new Date(dateStr+'T00:00');
+  d.setMonth(d.getMonth()+months);
+  return dstr(d);
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function min2str(m){return Math.floor(m/60)+'小时'+pad(m%60)+'分'}
+function durStr(ms){
+  const m = Math.round(ms/60000);
+  if(m<60) return m+' 分钟';
+  return Math.floor(m/60)+' 小时 '+pad(m%60)+' 分';
+}
+
+/* ================= 疫苗定义（国家免疫规划） ================= */
+const VACCINE_DEFS = [
+  {name:'乙肝疫苗',      doseNames:['第1剂','第2剂','第3剂'], intervals:[1,5]},
+  {name:'卡介苗',        doseNames:['第1剂'],                 intervals:[]},
+  {name:'脊灰疫苗',      doseNames:['第1剂','第2剂','第3剂','第4剂'], intervals:[1,1,44]},
+  {name:'百白破疫苗',    doseNames:['第1剂','第2剂','第3剂','第4剂'], intervals:[1,1,13]},
+  {name:'A群流脑疫苗',   doseNames:['第1剂','第2剂'],         intervals:[3]},
+  {name:'麻腮风疫苗',    doseNames:['第1剂','第2剂'],         intervals:[10]},
+  {name:'乙脑减毒活疫苗',doseNames:['第1剂','第2剂'],         intervals:[16]},
+  {name:'A群C群流脑疫苗',doseNames:['第1剂','第2剂'],         intervals:[36]},
+  {name:'白破疫苗',      doseNames:['第1剂'],                 intervals:[]},
+];
+// 各疫苗第1剂的建议月龄（出生=0），用于推算"本月应接种"
+const VAX_FIRST_AGE = {乙肝疫苗:0, 卡介苗:0, 脊灰疫苗:2, 百白破疫苗:3, 'A群流脑疫苗':6, 麻腮风疫苗:8, 乙脑减毒活疫苗:8, 'A群C群流脑疫苗':36, 白破疫苗:72};
+
+/* ================= 成长参考（按月龄自动切换） ================= */
+const REF_ICONS = {大运动:'🤸', 精细动作:'👋', 认知发展:'🧠', 语言:'🗣️', 社交情绪:'😊', 喂养与生活:'🍼'};
+const MONTH_REF = {
+4:{
+  '大运动':['俯卧时能用手肘撑起胸部，抬头约 90°','能从仰卧翻到侧卧，部分宝宝可翻到俯卧','拉坐时头基本挺稳，不再明显后仰','俯卧时间建议每天累计 15～30 分钟'],
+  '精细动作':['能短暂抓住放进手里的玩具，有意识握持','两手在胸前互握、玩手、啃手指','眼睛和手配合，会伸手够取挂着的玩具'],
+  '认知发展':['视线能灵活追视移动的人和物（红黑卡正合适）','听到声音会转头寻找声源','能认出主要照顾人，见到熟悉的人会兴奋'],
+  '语言':['会咿咿呀呀发出 a、o、e 等元音音节','会笑出声（咯咯笑），爱和人"对话"','大人说话时会有回应性发声'],
+  '社交情绪':['逗引会笑，会主动对人微笑','开始出现"认生"苗头','喜欢被抱、被逗玩，享受互动'],
+  '喂养与生活':['每日总奶量约 800～1000ml，单顿约 120～180ml（个体差异大，以宝宝为准）','继续每天补充维生素 AD / D3','每天户外活动 1～2 小时，避开正午暴晒','全天睡眠约 14～16 小时，夜间可连续睡 5～6 小时'],
+},
+5:{
+  '大运动':['俯卧抬头很稳，胸部能完全离床','翻身更熟练，仰卧到俯卧成功率提高','靠坐片刻，腰背力量在增强','俯卧时间可逐步增加到每天 30 分钟以上'],
+  '精细动作':['能主动伸手去抓面前的玩具','两只手都能抓住玩具，还会对敲','玩具可以从一只手换到另一只手'],
+  '认知发展':['物体恒存开始萌芽：毛巾盖住脸会自己掀开找','追视范围更大，能追随移动较远的人和物','开始分辨熟悉与陌生的人'],
+  '语言':['咿呀声明显增多，声调有起伏像在"说话"','对叫自己的名字开始有反应','高兴时会大声尖叫表达情绪'],
+  '社交情绪':['能咯咯大笑','认生更明显，陌生人靠近会紧张','看到镜子里的自己会笑'],
+  '喂养与生活':['奶量仍约 800～1000ml/天，按需喂养','可以先观察辅食信号（挺舌反射消失、对食物感兴趣），但通常满 6 月龄再正式添加','继续 AD/D3，坚持户外活动','全天睡眠约 13～15 小时，夜觉延长'],
+},
+6:{
+  '大运动':['能独坐片刻（或靠坐很稳）','翻身已经很自如，仰卧俯卧随意切换','俯卧能撑起胸部，头抬得很高'],
+  '精细动作':['抓握更准确，能一把抓住玩具','玩具会在两手间传递','拇指和食指开始分化，初步会用指尖'],
+  '认知发展':['认生更明显，能区分家人和陌生人','玩具掉到地上会低头去找','玩躲猫猫会大笑'],
+  '语言':['开始发 baba、mama 等音，但多是无意识的','会模仿大人的音调和语气','大人说话时会安静地"听"，再回应'],
+  '社交情绪':['认生到达一个小高峰','看到熟悉的人会伸手要抱','对镜子里的自己很感兴趣'],
+  '喂养与生活':['🆕 本月开始添加辅食：先强化铁米粉，从一小勺开始，逐步加菜泥、果泥','奶量约 600～800ml/天，辅食作为补充','继续 AD/D3','全天睡眠约 13～15 小时'],
+},
+7:{
+  '大运动':['能坐得比较稳（不扶也能坐一会儿）','开始匍匐爬行或用肚子蹭着前进','扶站时会尝试用腿蹬地'],
+  '精细动作':['倒手很熟练','会用手掌拍打桌面、拍玩具','能抓住小一点的物品'],
+  '认知发展':['会找被藏起来的玩具（客体永存进步）','初步理解"不"的意思','会模仿大人的手势'],
+  '语言':['baba、dada 开始有指向','咿呀学语内容更丰富，像在"说句子"','听到音乐可能会扭动身体'],
+  '社交情绪':['怕生、分离焦虑开始出现','对镜中的自己互动（拍镜子、笑）','喜欢和大人玩互动游戏'],
+  '喂养与生活':['辅食种类增多：菜泥、果泥、肉泥、肝泥','奶量约 600～800ml/天','可以给宝宝少量喝水（用吸管杯尝试）','本月一般无常规接种，按时体检'],
+},
+8:{
+  '大运动':['手膝爬行越来越熟练','能扶着东西站起来（扶站）','会坐着玩玩具，身体不再晃'],
+  '精细动作':['会用拇指和食指捏起小东西','两手各拿一个玩具对敲','会撕纸、拍打'],
+  '认知发展':['客体永存理解更深入：掀开布找玩具','会模仿拍手、再见等动作','开始用眼神和手势"指"东西'],
+  '语言':['能发出连续音节（bababa、dadada）','能理解"不""再见"等简单词','被叫名字会回头看'],
+  '社交情绪':['认生进入高峰，依恋妈妈/主要照顾人','会主动和大人玩"躲猫猫"','看到熟悉的人会兴奋挥手'],
+  '喂养与生活':['辅食增加到每天 2～3 次，可以开始手指食物（蒸软的蔬菜条等）','奶量约 600～800ml/天','全天睡眠约 12～15 小时'],
+},
+9:{
+  '大运动':['爬行很灵活，可能尝试爬台阶','扶站很稳，会扶着家具迈步','坐着能自由转身拿玩具'],
+  '精细动作':['拇指食指对捏更精准，能捏起小豆豆','喜欢用手指戳、抠、撕','会两只手配合玩玩具'],
+  '认知发展':['能听懂简单指令（"拍手""再见"）','会找被完全藏起来的玩具','开始指认身体部位（眼睛、鼻子）'],
+  '语言':['咿呀学语接近"说话"的节奏','能发出"mama""baba"等有意义音节','对熟悉物品的名称有反应'],
+  '社交情绪':['依恋关系更明显，分开会不安','会"指物分享"：指着感兴趣的东西让大人看','模仿大人的动作更多'],
+  '喂养与生活':['辅食每天 3 次，接近"三餐"雏形，食物多样化','奶量约 600ml/天','手指食物是本月重点，练习自主进食'],
+},
+10:{
+  '大运动':['扶走越来越稳，可沿着家具移动','能独站几秒钟','下蹲捡东西还不稳，但很爱尝试'],
+  '精细动作':['捏小东西更精准','会尝试把东西放进容器里','翻硬纸板书一页一页翻'],
+  '认知发展':['能理解更多词汇和指令','会指出图片上的东西','模仿能力很强'],
+  '语言':['可能有意识地叫"妈妈""爸爸"','能说出 1 个左右的词','听懂的内容远比会说的多'],
+  '社交情绪':['会和大人"分享"自己感兴趣的东西','会挥手再见、拍手','喜欢被夸，会重复让大人开心的动作'],
+  '喂养与生活':['三餐辅食 + 2～3 次奶','食物可以做得稍稠、带小颗粒','继续鼓励自主进食（勺子、手指食物）'],
+},
+11:{
+  '大运动':['能独站更久，甚至不用扶','牵着大人的手走得很稳','有的宝宝开始尝试独立走一两步'],
+  '精细动作':['翻书、拍打、投掷都越来越熟练','能搭 1～2 块积木','会用食指指物'],
+  '认知发展':['问"XX 在哪里"能指出来','认识身体部位更多（手、脚、耳朵）','能完成简单指令（"把球给妈妈"）'],
+  '语言':['词汇量 1～2 个有意识用词','能听懂很多日常用语','会模仿大人说话的语气'],
+  '社交情绪':['模仿日常动作（梳头、打电话）','分离焦虑可能仍在','会用表情和声音表达喜好'],
+  '喂养与生活':['接近一日三餐 + 奶的模式','食物颗粒可以稍大，练习咀嚼','每天保证户外活动'],
+},
+12:{
+  '大运动':['能独走几步，摇摇晃晃但很开心','能蹲下再站起来','扶着栏杆能上台阶'],
+  '精细动作':['搭 2 块积木','会握笔乱涂乱画','能拧开盖子、翻书页'],
+  '认知发展':['物体永存理解成熟：会找藏起来的玩具','能执行两步指令（"去拿球，给妈妈"）','会指认大量日常物品'],
+  '语言':['能说 2～5 个有意义的词','会模仿动物叫声','能用动作+发音表达需求'],
+  '社交情绪':['会模仿"再见""飞吻"','开始有自己的喜好和主意','对小朋友感兴趣，爱观察别的孩子'],
+  '喂养与生活':['三餐 + 奶 500～600ml/天，可逐步尝试全脂牛奶或换 1 岁段奶粉','食物向家庭饮食过渡（少盐少糖）','可以开始练习用杯子喝水','本月无常规接种，记得按时体检'],
+},
+};
+
+/* ================= 状态 ================= */
+function defaultState(){
+  return {
+    baby:{name:'多米', birth:'2026-04-14', birthWeight:4.22, birthHeight:51.5},
+    currentUser:'爸爸',
+    feedings:[], potty:[], activities:[], baths:[], sleeps:[],
+    actCounts:{},   // date -> {type:count} 新活动计数
+    actHistory:[],  // 旧活动记录备份
+    growth:[],      // {date,weight,height,rec}
+    foods:[],       // 辅食 {id,date,time,name,amount,note,rec}
+    vitamins:{},   // date -> {type:'ad'|'d3',rec,time}
+    probiotics:{}, // date -> {done:bool,time}
+    walks:{},      // date -> {am:{status,time},pm:{status,time}} status: done|missed|ignored
+    bathIgnores:{},// date -> {time,rec}
+    vaccines: VACCINE_DEFS.map(v=>({name:v.name,doseNames:v.doseNames,intervals:v.intervals,doses:v.doseNames.map(l=>({label:l,date:null}))})),
+    sleeping:null,
+    remindersFired:{},
+    monthNotified:null, // 已通知到的月龄，用于"进入新月份"提示
+  };
+}
+let S;
+function load(){
+  try{const raw=localStorage.getItem(LS_KEY); if(raw){S=JSON.parse(raw); if(!S.vaccines||!S.vaccines.length) S.vaccines=defaultState().vaccines;} else S=defaultState();}
+  catch(e){S=defaultState();}
+  if(!S.baby) S.baby={};
+  if(!S.baby.birth) S.baby.birth='2026-04-14'; // 兼容旧数据
+  if(!S.baby.birthWeight) S.baby.birthWeight=4.22;
+  if(!S.baby.birthHeight) S.baby.birthHeight=51.5;
+  if(!S.currentUser) S.currentUser='爸爸'; // 兼容旧数据
+  if(!S.growth) S.growth=[];
+  if(!S.foods) S.foods=[];
+  if(!S.bathIgnores) S.bathIgnores={};
+  migrateVitamins();
+  migrateActivities();
+}
+// 维生素旧格式 {ad:true,d3:false} -> {type:'ad'}
+function migrateVitamins(){
+  if(!S.vitamins) S.vitamins={};
+  Object.keys(S.vitamins).forEach(d=>{
+    const v=S.vitamins[d];
+    if(v && !v.type && (v.ad||v.d3)){
+      v.type = v.ad?'ad':'d3';
+      delete v.ad; delete v.d3;
+    }
+  });
+}
+// 旧活动列表 -> 新计数体系（备份到 actHistory）
+const OLD_ACT_MAP={music:'music',cards:'cards',grasp:'grasp',turnover:'turnover',situp:'situp'};
+function migrateActivities(){
+  if(!S.actCounts) S.actCounts={};
+  if(Array.isArray(S.activities) && S.activities.length){
+    if(!S.actHistory) S.actHistory=[];
+    S.activities.forEach(a=>{
+      S.actHistory.push(a);
+      const d=dstr(new Date(a.time));
+      if(!S.actCounts[d]) S.actCounts[d]={};
+      const nt=OLD_ACT_MAP[a.type];
+      if(nt) S.actCounts[d][nt]=(S.actCounts[d][nt]||0)+1;
+    });
+    S.activities=[];
+  }
+}
+function save(){localStorage.setItem(LS_KEY,JSON.stringify(S))}
+
+/* ================= 月龄计算 ================= */
+// 满月数：按出生日期到今天的"满 X 个月"
+function getAgeMonths(){
+  const birth=toDT(S.baby.birth)||toDT('2026-04-14');
+  const now=T();
+  let m=(now.getFullYear()-birth.getFullYear())*12 + (now.getMonth()-birth.getMonth());
+  if(now.getDate()<birth.getDate()) m--; // 还没到"日"，不算满月
+  return Math.max(0,m);
+}
+function ageTxt(){
+  const birth=toDT(S.baby.birth);
+  const now=T();
+  const m=getAgeMonths();
+  // 计算零头天数
+  const bm=new Date(birth.getFullYear(), birth.getMonth()+m, birth.getDate());
+  const days=Math.floor((now-bm)/86400000);
+  if(days>0) return m+' 个月 '+days+' 天';
+  return m+' 个月';
+}
+
+/* ================= 提醒引擎 ================= */
+const audioCtx = {ctx:null};
+function ensureAudio(){ if(!audioCtx.ctx){ try{audioCtx.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){} } if(audioCtx.ctx&&audioCtx.ctx.state==='suspended') audioCtx.ctx.resume(); }
+document.addEventListener('click', ensureAudio);
+function beep(){
+  if(!audioCtx.ctx) return;
+  try{
+    [0,.35,.7].forEach((t,i)=>{
+      const o=audioCtx.ctx.createOscillator(), g=audioCtx.ctx.createGain();
+      o.connect(g); g.connect(audioCtx.ctx.destination);
+      o.type='sine'; o.frequency.value=880;
+      g.gain.setValueAtTime(.001,audioCtx.ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.4,audioCtx.ctx.currentTime+t+.02);
+      g.gain.exponentialRampToValueAtTime(.001,audioCtx.ctx.currentTime+t+.3);
+      o.start(audioCtx.ctx.currentTime+t); o.stop(audioCtx.ctx.currentTime+t+.35);
+    });
+  }catch(e){}
+}
+let activeAlerts = [];
+function fireAlert(title, sub){
+  activeAlerts.push({title,sub});
+  renderAlerts();
+  beep();
+  if('Notification' in window && Notification.permission==='granted'){
+    try{ new Notification('🔔 多米提醒',{body:title+(sub?'\n'+sub:'')}) }catch(e){}
+  }
+}
+function dismissAlerts(){activeAlerts=[];renderAlerts()}
+function renderAlerts(){
+  const box=document.getElementById('alertBox');
+  if(!activeAlerts.length){box.classList.remove('show');box.style.display='none';return}
+  box.style.display='flex'; box.classList.add('show');
+  document.getElementById('alertTitle').textContent=activeAlerts[0].title;
+  document.getElementById('alertSub').textContent=activeAlerts[0].sub||'';
+}
+function markFired(key){S.remindersFired[todayStr()+':'+key]=true}
+function wasFired(key){return !!S.remindersFired[todayStr()+':'+key]}
+function clearTodayFired(){ // 新的一天重置
+  const today=todayStr();
+  Object.keys(S.remindersFired).forEach(k=>{ if(!k.startsWith(today+':')) delete S.remindersFired[k]; });
+}
+
+const REMIND_TIMES = {vitamin:'10:30', probiotic:'16:00', walk_am:'09:30', walk_pm:'16:30', bath:'20:00'};
+function minOfDay(s){const p=s.split(':');return +p[0]*60 + +p[1]}
+function minutesUntil(hhmm){
+  const d=T();
+  const nowM = d.getHours()*60+d.getMinutes();
+  return minOfDay(hhmm) - nowM;
+}
+function checkReminders(){
+  if(!S) return;
+  const now=T(); const today=todayStr(); const nowM=now.getHours()*60+now.getMinutes();
+
+  /* —— 维生素 AD/D3（隔天交替） —— */
+  const vitToday=S.vitamins[today];
+  if(!vitToday && !wasFired('vit')){
+    const left=minutesUntil(REMIND_TIMES.vitamin);
+    if(left<=5 && left>=-90){
+      markFired('vit');
+      const exp=expectedVitType();
+      const last=lastVitType();
+      fireAlert('💊 该喂 '+typeName(exp)+' 啦','上午 10:30 · '+(last?('昨天喂的'+typeName(last.type)+'，今天换 '+typeName(exp)):'今天该喂 '+typeName(exp)+'，明天换另一个'));
+    }
+  }
+  /* —— 益生菌 —— */
+  const prob=S.probiotics[today];
+  if(!(prob&&prob.done) && !wasFired('prob')){
+    const left=minutesUntil(REMIND_TIMES.probiotic);
+    if(left<=5 && left>=-90){
+      markFired('prob');
+      fireAlert('🦠 该喝益生菌了', '下午 4:00 · 记得标记"已喝"');
+    }
+  }
+  /* —— 遛弯 —— */
+  ['am','pm'].forEach(slot=>{
+    const wk=(S.walks[today]||{})[slot];
+    if(!wk && !wasFired('walk_'+slot)){
+      const hhmm = slot==='am'?REMIND_TIMES.walk_am:REMIND_TIMES.walk_pm;
+      const left=minutesUntil(hhmm);
+      if(left<=5 && left>=-120){
+        markFired('walk_'+slot);
+        fireAlert(slot==='am'?'🌤️ 上午遛弯时间到':'🌇 下午遛弯时间到', '带多米出去走走吧，记得标记"已实施/未实施"');
+      }
+    }
+  });
+  /* —— 洗澡（疫苗日跳过 / 手动忽略） —— */
+  const vaxToday = S.vaccines.some(v=>v.doses.some(d=>d.date===today));
+  const bathIgnored = !!(S.bathIgnores&&S.bathIgnores[today]);
+  if(!vaxToday && !bathIgnored){
+    const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
+    if(!bathsToday.length && !wasFired('bath')){
+      const left=minutesUntil(REMIND_TIMES.bath);
+      if(left<=5 && left>=-120){
+        markFired('bath');
+        fireAlert('🛁 该给多米洗澡啦', '晚上 8:00 · 洗完记得记录');
+      }
+    }
+  }
+  /* —— 冲奶提醒 —— */
+  S.feedings.forEach(f=>{
+    if(!f.nextTime||f.remindDone) return;
+    const next=toDT(f.nextTime); if(!next) return;
+    const remMin = next.getTime()-20*60000;
+    const nowT = now.getTime();
+    if(nowT>=remMin && nowT<=next.getTime()){
+      f.remindDone=true; save();
+      fireAlert('🍼 该冲奶啦', '预计 '+(f.amount||'')+'ml · '+hm(next)+' 喂 · 提前20分钟提醒');
+    }
+  });
+
+  renderAll();
+}
+
+/* ================= 渲染：概览 ================= */
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function ovCard(icon, title, val, cls, jump){
+  var extra='';
+  if(jump){
+    var p=jump.indexOf('|'); var v=(p>=0)?jump.slice(0,p):jump; var a=(p>=0)?jump.slice(p+1):'';
+    extra=' onclick="goTab(\''+v+'\''+(a?',\''+a+'\'':'')+')"';
+  }
+  return '<div class="ov-card '+(cls||'')+(jump?' ov-jump':'')+'"'+extra+'><div class="ic">'+icon+'</div><div class="v">'+val+'</div><div class="t">'+title+(jump?' <span class="ov-go">›</span>':'')+'</div></div>';
+}
+function renderOverview(){
+  const today=todayStr();
+  const g=document.getElementById('ovGrid');
+  let html='';
+
+  // 宝宝档案（最近身高体重，不显示出生）
+  const _gs=S.growth.slice().sort((a,b)=>a.date<b.date?1:-1);
+  const _gl=_gs[0];
+  html+=ovCard('👶','最新身高体重', _gl?(_gl.weight+'kg · '+_gl.height+'cm'):'暂无记录', _gl?'ok':'', 'growth|card-growth');
+
+  // 喂养
+  const feeds=feedOfDay(today);
+  const last=feeds[feeds.length-1];
+  if(last&&last.nextTime){
+    const n=toDT(last.nextTime);
+    const passed=nowM()>n.getHours()*60+n.getMinutes();
+    html+=ovCard('🍼', passed?'下一顿（已到，快喂）':'下一顿 '+hm(n),
+      (last.amount||'--')+'ml · '+hm(n), passed?'overdue':'ok', 'record|card-feed');
+  } else {
+    html+=ovCard('🍼','下一顿','--','', 'record|card-feed');
+  }
+
+  // 维生素（隔天交替）
+  const vit=S.vitamins[today];
+  const exp=expectedVitType();
+  const vitDone=!!vit;
+  const vitOverdue=!vitDone && minutesUntil('10:30')<0;
+  const vitTxt=vitDone?('已喂 '+typeName(vit.type)+' ✅'):(typeName(exp)+' 待喂');
+  html+=ovCard('💊','维生素（隔天交替）', vitTxt, vitDone?'ok':(vitOverdue?'overdue':''), 'record|card-vitamin');
+
+  // 益生菌
+  const prob=S.probiotics[today];
+  const probDone=prob&&prob.done;
+  const probOverdue=!probDone&&minutesUntil('16:00')<0;
+  html+=ovCard('🦠','益生菌', probDone?'已喝 ✅':(probOverdue?'忘记标记':'16:00 待喝'), probDone?'ok':(probOverdue?'overdue':''), 'record|card-probiotic');
+
+  // 遛弯（含忽略）
+  const wk=S.walks[today]||{};
+  const am=wk.am, pm=wk.pm;
+  const wTxt=s=>s?(s.status==='done'?'✅':(s.status==='ignored'?'🚫':(s.status==='missed'?'✖':'待定'))):'待定';
+  const amTxt='9:30 '+wTxt(am), pmTxt='4:30 '+wTxt(pm);
+  const amDone=am&&am.status==='done', pmDone=pm&&pm.status==='done';
+  html+=ovCard('🌤️','遛弯', amTxt+' · '+pmTxt, (amDone&&pmDone)?'ok':'', 'record|card-walk');
+
+  // 洗澡（疫苗日跳过 / 手动忽略）
+  const vaxToday=S.vaccines.some(v=>v.doses.some(d=>d.date===today));
+  const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
+  const bathIgnored=!!(S.bathIgnores&&S.bathIgnores[today]);
+  if(vaxToday){
+    html+=ovCard('🛁','洗澡（疫苗日跳过）','--','skip','record|card-bath');
+  }else if(bathIgnored){
+    html+=ovCard('🛁','洗澡（已忽略）','--','ig','record|card-bath');
+  }else{
+    const bDone=bathsToday.length>0;
+    const bOverdue=!bDone&&minutesUntil('20:00')<0;
+    html+=ovCard('🛁','洗澡', bDone?'洗过了 ✅':'20:00 待洗', bDone?'ok':(bOverdue?'overdue':''), 'record|card-bath');
+  }
+
+  // 大小便
+  const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today).length;
+  const poop=S.potty.filter(p=>p.type==='poop'&&dstr(new Date(p.time))===today).length;
+  html+=ovCard('🚽','大小便', '小便 '+pee+' · 大便 '+poop,'', 'record|card-potty');
+
+  // 睡眠（以分钟为核心）
+  const sleeps=S.sleeps.filter(s=>sleepOnDay(s,today));
+  let totalMin=0; sleeps.forEach(s=>{ totalMin+=sleepMins(s) });
+  let sleepTxt = S.sleeping?('睡眠中 😴'):(totalMin>0?(sleeps.length+'次 · '+durStr(totalMin*60000)):'--');
+  html+=ovCard('😴','今日睡眠', sleepTxt,'', 'record|card-sleep');
+
+  // 辅食
+  const foodToday=S.foods.filter(f=>f.date===today);
+  html+=ovCard('🍚','今日辅食', foodToday.length?('已添加 '+foodToday.length+' 次'):'尚未添加', foodToday.length?'ok':'', 'food');
+
+  // 活动（计数制）
+  const todayActs=S.actCounts[today]||{};
+  let actTotal=0; Object.keys(todayActs).forEach(k=>actTotal+=todayActs[k]);
+  html+=ovCard('🏃','今日活动', actTotal+' 次','', 'record|card-activity');
+
+  // 今日各人记录数统计
+  const rec={};
+  S.feedings.concat(S.potty,S.baths,S.sleeps).forEach(r=>{
+    if(dstr(new Date(r.time||r.start))===today && r.recorder) rec[r.recorder]=(rec[r.recorder]||0)+1;
+  });
+  const recTxt=USERS.filter(u=>rec[u.name]).map(u=>u.emoji+u.name+' '+rec[u.name]).join('  ')||'--';
+  html+=ovCard('👥','今日记录', recTxt,'');
+
+  // 疫苗
+  const vDone=S.vaccines.reduce((a,v)=>a+v.doses.filter(d=>d.date).length,0);
+  const vTot=S.vaccines.reduce((a,v)=>a+v.doses.length,0);
+  html+=ovCard('💉','疫苗接种', vDone+'/'+vTot+' 剂','', 'growth|card-vaccine');
+
+  g.innerHTML=html;
+  document.getElementById('todayStr').textContent=today;
+}
+
+function nowM(){const d=T();return d.getHours()*60+d.getMinutes()}
+
+/* ================= 喂养 ================= */
+function pickAmt(el){
+  document.querySelectorAll('.amount-chips .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('feedAmt').value=el.dataset.amt;
+}
+document.getElementById('feedAmt').addEventListener('input',function(){
+  const v=+this.value||0;
+  document.querySelectorAll('.amount-chips .chip').forEach(c=>{
+    c.classList.toggle('on', +c.dataset.amt===v);
+  });
+});
+function addFeeding(){
+  const tInput=document.getElementById('feedTime').value;
+  const amt=+document.getElementById('feedAmt').value||130;
+  if(!tInput){alert('请先填写喂养时间（忘记时间就选个大概时间补录）');return}
+  const time=new Date(tInput.replace(' ','T'));
+  if(time>T()){alert('喂养时间不能是未来哦～');return}
+  // 档位匹配：<=150 → 130档（4h），否则 170档（5h）
+  const interval = amt<=150 ? 240 : 300;
+  const intervalLabel = amt<=150 ? '130ml · 隔4小时' : '170ml · 隔5小时';
+  const next = new Date(time.getTime()+interval*60000);
+  S.feedings.push({id:uid(), time:time.toISOString(), amount:amt, intervalMin:interval, intervalLabel, nextTime:next.toISOString(), remindDone:false, recorder:S.currentUser});
+  save(); renderAll();
+  document.getElementById('feedTime').value=nowInput();
+  // 记录后轻提示：上一顿时间
+  const todayFeeds=feedOfDay(todayStr());
+  const last=todayFeeds[todayFeeds.length-1];
+  if(todayFeeds.length>=2){
+    const prev=todayFeeds[todayFeeds.length-2];
+    const gap=Math.round((new Date(last.time)-new Date(prev.time))/60000);
+    toast('✅ 已记录 '+hm(new Date(last.time))+' · '+amt+'ml\n上一顿 '+hm(new Date(prev.time))+' · 间隔 '+durStr(Math.max(0,gap)*60000));
+  } else {
+    toast('✅ 已记录 '+hm(new Date(last.time))+' · '+amt+'ml');
+  }
+}
+function feedOfDay(ds){
+  return S.feedings.filter(f=>dstr(new Date(f.time))===ds).sort((a,b)=>new Date(a.time)-new Date(b.time));
+}
+function nextFeedHTML(){
+  // 用「整体最近一顿」而非仅当天，避免跨天后提醒整块消失
+  const all=S.feedings.slice().sort((a,b)=>new Date(b.time)-new Date(a.time));
+  const last=all[0];
+  const box=document.getElementById('nextFeed');
+  if(!last||!last.nextTime){box.style.display='none';return}
+  const n=toDT(last.nextTime);
+  const r=new Date(n.getTime()-20*60000);
+  const left=Math.round((n.getTime()-T().getTime())/60000);
+  const leftTxt=left>=0?('还有 '+durStr(left*60000)+' 到点'):'已到时间，快喂吧！';
+  let prevHtml='';
+  if(all.length>=2){
+    const prev=all[1];
+    const gap=Math.round((new Date(last.time)-new Date(prev.time))/60000);
+    prevHtml='<br><span class="sub">⏪ 上一顿：'+hm(new Date(prev.time))+'（'+prev.amount+'ml）· 间隔 '+durStr(Math.max(0,gap)*60000)+'</span>';
+  }
+  box.style.display='block';
+  box.innerHTML='<b>🍼 下一顿：'+hm(n)+'</b>（'+(last.amount||'--')+'ml · '+(last.intervalLabel||'')+'）<br>'+
+    '<span class="sub">⏰ 冲奶提醒：'+hm(r)+' · '+leftTxt+'</span>'+prevHtml;
+}
+/* 喂养历史（折叠，一直保留） */
+function renderFeedHist(){
+  const el=document.getElementById('feedHist');
+  const today=todayStr();
+  const hist=S.feedings.filter(f=>dstr(new Date(f.time))!==today).sort((a,b)=>new Date(b.time)-new Date(a.time));
+  if(!hist.length){el.innerHTML='<div class="empty">暂无历史记录</div>';return}
+  const groups={};
+  hist.forEach(f=>{const d=dstr(new Date(f.time)); (groups[d]=groups[d]||[]).push(f)});
+  const dates=Object.keys(groups).sort().reverse();
+  let h='';
+  dates.forEach(d=>{
+    h+='<div class="hist-date">'+d+'（'+groups[d].length+' 顿）</div>';
+    groups[d].slice().reverse().forEach(f=>{
+      h+='<div class="hist-row"><span><span class="time">'+hm(new Date(f.time))+'</span> <span class="meta">'+f.amount+'ml · '+(f.intervalLabel||'')+'</span>'+recTag(f.recorder)+'</span>'+
+        '<span class="ops"><span class="edit-btn" onclick="editFeed(\''+f.id+'\')">✎</span><span class="x" onclick="delById(\''+f.id+'\')">✕</span></span></div>';
+    });
+  });
+  el.innerHTML=h;
+}
+/* 喂养本周统计（近7天） */
+function feedWeekStats(){
+  const today=todayStr();
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    days.push(dstr(d));
+  }
+  let totalCount=0,totalAmt=0,daysWith=0;
+  const rows=days.map(ds=>{
+    const fs=feedOfDay(ds);
+    const amt=fs.reduce((a,f)=>a+(+f.amount||0),0);
+    if(fs.length){totalCount+=fs.length; totalAmt+=amt; daysWith++}
+    return {ds,count:fs.length,amt,avg:fs.length?Math.round(amt/fs.length):0};
+  });
+  document.getElementById('wkFeedCount').textContent=totalCount+' 次';
+  document.getElementById('wkFeedTotal').textContent=totalAmt+' ml';
+  document.getElementById('wkFeedAvg').textContent=daysWith?Math.round(totalAmt/daysWith)+' ml':'--';
+  document.getElementById('wkFeedTable').innerHTML=
+    '<tr><th>日期</th><th>次数</th><th>总奶量</th><th>平均每顿</th></tr>'+
+    rows.map(x=>'<tr><td>'+(x.ds===today?'今天':x.ds.slice(5))+'</td><td>'+x.count+'</td><td>'+(x.amt?x.amt+'ml':'--')+'</td><td>'+(x.avg?x.avg+'ml':'--')+'</td></tr>').join('');
+}
+
+/* ================= 通用记录列表 ================= */
+function listHtml(items, fmt, emptyTxt){
+  if(!items.length) return '<div class="empty">'+emptyTxt+'</div>';
+  return items.map(it=>{
+    return '<div class="li"><span>'+fmt(it)+'</span><span class="x" onclick="delById(\''+it.id+'\')">✕</span></div>';
+  }).join('');
+}
+function delById(id){
+  ['feedings','potty','activities','baths','sleeps'].forEach(k=>{
+    S[k]=S[k].filter(x=>x.id!==id);
+  });
+  save(); renderAll();
+}
+
+/* ================= 编辑弹窗 ================= */
+let _editSaveFn=null;
+function openEditModal(title, bodyHtml, onSave){
+  document.getElementById('editTitle').textContent=title;
+  document.getElementById('editBody').innerHTML=bodyHtml;
+  _editSaveFn=onSave;
+  document.getElementById('editOverlay').style.display='flex';
+}
+function closeEditModal(){
+  document.getElementById('editOverlay').style.display='none';
+  _editSaveFn=null;
+}
+function editSave(){
+  if(_editSaveFn && _editSaveFn()===false) return; // 校验失败不关闭
+  closeEditModal();
+}
+/* 喂养：修改时间/奶量，重算间隔与下一顿 */
+function editFeed(id){
+  const f=S.feedings.find(x=>x.id===id);
+  if(!f) return;
+  const d=new Date(f.time);
+  openEditModal('✎ 修改喂养记录',
+    '<label>喂养时间</label><input type="datetime-local" id="edTime" value="'+dstr(d)+'T'+hm(d)+'">'+
+    '<label>奶量 (ml)</label><input type="number" id="edAmt" value="'+f.amount+'" min="10" max="400">',
+    ()=>{
+      const v=document.getElementById('edTime').value;
+      if(!v){alert('请选择喂养时间');return false}
+      const time=new Date(v.replace(' ','T'));
+      const amt=+document.getElementById('edAmt').value;
+      if(isNaN(time.getTime())){alert('喂养时间格式不对');return false}
+      if(!amt||amt<10||amt>400){alert('奶量请在 10-400ml 之间');return false}
+      const interval=amt<=150?240:300;
+      f.time=time.toISOString();
+      f.amount=amt;
+      f.intervalMin=interval;
+      f.intervalLabel=amt<=150?'130ml · 隔4小时':'170ml · 隔5小时';
+      f.nextTime=new Date(time.getTime()+interval*60000).toISOString();
+      save(); renderAll();
+      toast('✅ 喂养记录已修改');
+    });
+}
+/* 睡眠：修改开始时间/时长 */
+function editSleep(id){
+  const s=S.sleeps.find(x=>x.id===id);
+  if(!s) return;
+  const d=new Date(s.start);
+  openEditModal('✎ 修改睡眠记录',
+    '<label>开始时间</label><input type="datetime-local" id="edStart" value="'+dstr(d)+'T'+hm(d)+'">'+
+    '<label>时长（分钟）</label><input type="number" id="edMin" value="'+sleepMins(s)+'" min="1" max="900">',
+    ()=>{
+      const v=document.getElementById('edStart').value;
+      if(!v){alert('请选择开始时间');return false}
+      const start=new Date(v.replace(' ','T'));
+      const m=+document.getElementById('edMin').value;
+      if(isNaN(start.getTime())){alert('开始时间格式不对');return false}
+      if(!m||m<1||m>900){alert('时长请在 1-900 分钟之间');return false}
+      s.start=start.toISOString();
+      s.minutes=m;
+      if(s.end) s.end=new Date(start.getTime()+m*60000).toISOString();
+      save(); renderAll();
+      toast('✅ 睡眠记录已修改');
+    });
+}
+/* 身高体重：修改日期/数值 */
+function editGrowth(dateStr){
+  const g=S.growth.find(x=>x.date===dateStr);
+  if(!g) return;
+  openEditModal('✎ 修改 '+dateStr+' 的记录',
+    '<label>记录日期</label><input type="date" id="edDate" value="'+g.date+'">'+
+    '<label>体重 (kg)</label><input type="number" id="edW" value="'+g.weight+'" step="0.01" min="1" max="30">'+
+    '<label>身高 (cm)</label><input type="number" id="edH" value="'+g.height+'" step="0.1" min="30" max="120">',
+    ()=>{
+      const date=document.getElementById('edDate').value;
+      const w=+document.getElementById('edW').value;
+      const h=+document.getElementById('edH').value;
+      if(!date){alert('请选择记录日期');return false}
+      if(!w||w<=0||w>30){alert('体重请在 1-30kg 之间');return false}
+      if(!h||h<=0||h>120){alert('身高请在 30-120cm 之间');return false}
+      if(S.growth.some(x=>x.date===date && x!==g)){alert('该日期已有记录，请选择其他日期');return false}
+      g.date=date; g.weight=w; g.height=h; g.rec=S.currentUser;
+      save(); renderAll();
+      toast('✅ 身高体重记录已修改');
+    });
+}
+
+/* ================= 各模块操作 ================= */
+function addPotty(type){
+  S.potty.push({id:uid(), time:new Date().toISOString(), type, recorder:S.currentUser});
+  save(); renderAll();
+}
+/* ================= 每日活动（分类+计数） ================= */
+const ACT_GROUPS=[
+  {title:'📖 早教练习', color:'blue', items:[
+    {t:'music', n:'听儿歌/故事', e:'🎵'},
+    {t:'cards', n:'红黑视觉卡', e:'🔴⚫'},
+  ]},
+  {title:'🤸 大运动练习', color:'green', items:[
+    {t:'grasp', n:'抓握练习', e:'✊'},
+    {t:'turnover', n:'翻身练习', e:'🔄'},
+    {t:'situp', n:'拉坐练习', e:'🙆'},
+    {t:'crossleg', n:'交叉抬腿', e:'🦵'},
+  ]},
+  {title:'🎡 前庭训练', color:'pink', items:[
+    {t:'plane', n:'飞机抱', e:'✈️'},
+    {t:'hammer', n:'大摆锤', e:'🔨'},
+    {t:'sled', n:'拉雪橇', e:'🛷'},
+    {t:'parachute', n:'降落伞', e:'🪂'},
+    {t:'swing', n:'荡秋千', e:'🎠'},
+  ]},
+];
+const ACT_NAMES={}; // 兼容旧渲染
+ACT_GROUPS.forEach(g=>g.items.forEach(it=>ACT_NAMES[it.t]=it.e+' '+it.n));
+function actCount(type){
+  const d=S.actCounts[todayStr()];
+  return d?(d[type]||0):0;
+}
+function actSelected(type){
+  const d=S.actSelected||{};
+  return !!d[todayStr()+':'+type];
+}
+function toggleAct(type){
+  const key=todayStr()+':'+type;
+  if(!S.actSelected) S.actSelected={};
+  S.actSelected[key]=!S.actSelected[key];
+  save(); renderAll();
+}
+function addAct(type){
+  const today=todayStr();
+  if(!S.actCounts[today]) S.actCounts[today]={};
+  S.actCounts[today][type]=(S.actCounts[today][type]||0)+1;
+  if(!S.actSelected) S.actSelected={};
+  S.actSelected[today+':'+type]=true; // 记录过自动选中变色
+  save(); renderAll();
+}
+function renderActs(){
+  const el=document.getElementById('actGroups');
+  const today=todayStr();
+  let h='';
+  ACT_GROUPS.forEach(g=>{
+    let total=0;
+    const items=g.items.map(it=>{
+      const c=actCount(it.t);
+      total+=c;
+      const on=actSelected(it.t);
+      return '<div class="act-item'+(on?' on':'')+'" onclick="toggleAct(\''+it.t+'\')">'+
+        '<span class="an"><span class="ae">'+it.e+'</span>'+it.n+'</span>'+
+        '<span class="cnt">'+(c||'0')+'</span>'+
+        '<span class="plus" onclick="event.stopPropagation();addAct(\''+it.t+'\')">＋</span>'+
+        '</div>';
+    }).join('');
+    h+='<div class="act-group '+g.color+'">'+
+      '<div class="act-group-title">'+g.title+' <span class="cnt">今日共 '+total+' 次</span></div>'+
+      '<div class="act-grid">'+items+'</div></div>';
+  });
+  el.innerHTML=h;
+}
+
+/* ================= 记录人账户 ================= */
+const USERS=[
+  {name:'爸爸', emoji:'👨', cls:'rec-0'},
+  {name:'妈妈', emoji:'👩', cls:'rec-1'},
+  {name:'爷爷', emoji:'👴', cls:'rec-2'},
+  {name:'奶奶', emoji:'👵', cls:'rec-3'},
+];
+function userIdx(n){const i=USERS.findIndex(u=>u.name===n);return i<0?0:i}
+function recTag(r){
+  if(!r) return '';
+  const u=USERS[userIdx(r)];
+  return '<span class="rec '+u.cls+'">'+u.emoji+u.name+'</span>';
+}
+function setUser(name){
+  if(!S || name===S.currentUser) return;
+  const u=USERS.find(x=>x.name===name);
+  if(!confirm('切换到 '+u.emoji+u.name+' 的记录身份吗？接下来记的每一条都会算在'+u.name+'名下。')) return;
+  S.currentUser=name; save(); renderAll();
+}
+function renderUserBar(){
+  const bar=document.getElementById('userBar');
+  if(!bar||!S) return;
+  bar.innerHTML=USERS.map(u=>
+    '<button class="ub-btn'+(S.currentUser===u.name?' on':'')+'" onclick="setUser(\''+u.name+'\')">'+u.emoji+' '+u.name+'</button>'
+  ).join('');
+}
+
+function typeName(t){return t==='ad'?'AD':'D3'}
+function lastVitType(){
+  for(let i=1;i<=60;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const v=S.vitamins[dstr(d)];
+    if(v&&v.type) return {type:v.type, date:dstr(d)};
+  }
+  return null;
+}
+// 今天该喂什么：上次喂的另一种；无记录默认 AD
+function expectedVitType(){
+  const last=lastVitType();
+  if(!last) return 'ad';
+  return last.type==='ad'?'d3':'ad';
+}
+function setVit(which){
+  const today=todayStr();
+  const cur=S.vitamins[today];
+  if(cur&&cur.type){
+    if(cur.type===which){toast('今天已经喂过 '+typeName(which)+' 啦～');return}
+    if(!confirm('今天已经喂过 '+typeName(cur.type)+'，要改成 '+typeName(which)+' 吗？'))return;
+  }
+  S.vitamins[today]={type:which, rec:S.currentUser, time:hm(new Date())};
+  save(); renderAll();
+  toast('✅ 已记录：今天喂 '+typeName(which)+'，明天喂 '+typeName(which==='ad'?'d3':'ad'));
+}
+function toggleProbiotic(){
+  const today=todayStr();
+  if(S.probiotics[today]&&S.probiotics[today].done) delete S.probiotics[today];
+  else S.probiotics[today]={done:true, time:hm(new Date()), rec:S.currentUser};
+  save(); renderAll();
+}
+function setWalk(slot,status){
+  const today=todayStr();
+  if(!S.walks[today]) S.walks[today]={};
+  if(S.walks[today][slot] && S.walks[today][slot].status===status){
+    delete S.walks[today][slot]; // 再点一次取消，恢复待定
+  }else{
+    S.walks[today][slot]={status, time:new Date().toISOString(), rec:S.currentUser};
+  }
+  save(); renderAll();
+}
+function toggleBathIgnore(){
+  const today=todayStr();
+  if(S.bathIgnores[today]){ delete S.bathIgnores[today]; toast('已取消忽略，今晚 8:00 会正常提醒'); }
+  else{ S.bathIgnores[today]={time:new Date().toISOString(), rec:S.currentUser}; toast('已忽略，今天不再提醒洗澡'); }
+  save(); renderAll();
+}
+function addBath(type){
+  S.baths.push({id:uid(), time:new Date().toISOString(), type, recorder:S.currentUser});
+  save(); renderAll();
+}
+function sleepMins(s){ return s.minutes!=null ? s.minutes : (s.end ? Math.round((new Date(s.end)-new Date(s.start))/60000) : 0) }
+function sleepOnDay(s, day){ if(dstr(new Date(s.start))===day) return true; if(s.end && dstr(new Date(s.end))===day) return true; return false; }
+function startSleep(){
+  if(S.sleeping){alert('多米还在睡呢～先点"醒了"');return}
+  S.sleeping=new Date().toISOString();
+  S.sleepingRec=S.currentUser;
+  save(); renderAll();
+}
+function endSleep(){
+  if(!S.sleeping){alert('还没有开始睡哦～');return}
+  const end=new Date();
+  const minutes=Math.round((end-new Date(S.sleeping))/60000);
+  if(minutes>24*60){
+    // 疑似忘记点「醒了」或跨天未结束：弹窗让用户补录真实起止时间，不丢数据
+    const st=new Date(S.sleeping);
+    openEditModal('✎ 补录睡眠时间（疑似忘记点「醒了」）',
+      '<label>开始时间</label><input type="datetime-local" id="edStart" value="'+dstr(st)+'T'+hm(st)+'">'+
+      '<label>醒来时间</label><input type="datetime-local" id="edEnd" value="'+dstr(end)+'T'+hm(end)+'">',
+      ()=>{
+        const sv=document.getElementById('edStart').value, ev=document.getElementById('edEnd').value;
+        if(!sv||!ev){alert('请填写开始和醒来时间');return false}
+        const s0=new Date(sv.replace(' ','T')), e0=new Date(ev.replace(' ','T'));
+        if(isNaN(s0.getTime())||isNaN(e0.getTime())){alert('时间格式不对');return false}
+        const m=Math.round((e0-s0)/60000);
+        if(m<=0){alert('醒来时间需晚于开始时间');return false}
+        if(m>24*60){alert('单次睡眠不能超过 24 小时，请检查时间');return false}
+        S.sleeps.push({id:uid(), start:s0.toISOString(), end:e0.toISOString(), minutes:m, recorder:S.sleepingRec||S.currentUser});
+        S.sleeping=null; S.sleepingRec=null; save(); renderAll();
+        toast('✅ 已补录睡眠 '+durStr(m*60000));
+      });
+    return;
+  }
+  S.sleeps.push({id:uid(), start:S.sleeping, end:end.toISOString(), minutes, recorder:S.sleepingRec||S.currentUser});
+  S.sleeping=null; S.sleepingRec=null; save(); renderAll();
+}
+function addSleepManual(){
+  const m=+document.getElementById('sleepMin').value||0;
+  if(m<=0||m>900){alert('请填写 1-900 之间的分钟数');return}
+  S.sleeps.push({id:uid(), start:new Date().toISOString(), minutes:m, recorder:S.currentUser});
+  save(); renderAll();
+}
+function clearToday(key){
+  const today=todayStr();
+  const map={potty:'大小便',bath:'洗澡'};
+  if(!confirm('确定清空今天的所有'+map[key]+'记录吗？'))return;
+  const arr={potty:'potty',bath:'baths'}[key];
+  S[arr]=S[arr].filter(x=>dstr(new Date(x.time))!==today);
+  save(); renderAll();
+}
+/* 睡眠本周统计（近7天） */
+function sleepWeekStats(){
+  const today=todayStr();
+  const days=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(dstr(d));}
+  let totalN=0,totalMin=0,daysWith=0;
+  const rows=days.map(ds=>{
+    const ss=S.sleeps.filter(s=>dstr(new Date(s.start))===ds);
+    let m=0; ss.forEach(s=>m+=sleepMins(s));
+    if(ss.length){totalN+=ss.length;totalMin+=m;daysWith++}
+    return {ds,n:ss.length,min:m};
+  });
+  document.getElementById('wkSleepCount').textContent=totalN+' 次';
+  document.getElementById('wkSleepTotal').textContent=durStr(totalMin*60000);
+  document.getElementById('wkSleepAvg').textContent=daysWith?durStr(Math.round(totalMin/daysWith)*60000):'--';
+  document.getElementById('wkSleepTable').innerHTML=
+    '<tr><th>日期</th><th>次数</th><th>总时长</th></tr>'+
+    rows.map(x=>'<tr><td>'+(x.ds===today?'今天':x.ds.slice(5))+'</td><td>'+x.n+'</td><td>'+(x.min?durStr(x.min*60000):'--')+'</td></tr>').join('');
+}
+/* 睡眠历史（折叠备份，不可删除） */
+function renderSleepHist(){
+  const el=document.getElementById('sleepHist');
+  const today=todayStr();
+  const hist=S.sleeps.filter(s=>dstr(new Date(s.start))!==today).sort((a,b)=>new Date(b.start)-new Date(a.start));
+  if(!hist.length){el.innerHTML='<div class="empty">暂无历史记录</div>';return}
+  const groups={};
+  hist.forEach(s=>{const d=dstr(new Date(s.start)); (groups[d]=groups[d]||[]).push(s)});
+  const dates=Object.keys(groups).sort().reverse();
+  let h='';
+  dates.forEach(d=>{
+    let dayMin=0; groups[d].forEach(s=>dayMin+=sleepMins(s));
+    h+='<div class="hist-date">'+d+'（'+groups[d].length+' 次 · '+durStr(dayMin*60000)+'）</div>';
+    groups[d].slice().reverse().forEach(s=>{
+      const mins=sleepMins(s);
+      const sub=s.end?('⏱ '+hm(new Date(s.start))+' → '+hm(new Date(s.end))):'📝 补录';
+      h+='<div class="hist-row"><span><span class="time">'+durStr(mins*60000)+'</span> <span class="meta">'+sub+'</span>'+recTag(s.recorder)+'</span>'+
+        '<span class="ops"><span class="edit-btn" onclick="editSleep(\''+s.id+'\')">✎</span></span></div>';
+    });
+  });
+  el.innerHTML=h;
+}
+
+/* ================= 身高体重 ================= */
+function addGrowth(){
+  const date=document.getElementById('gDate').value;
+  const w=+document.getElementById('gWeight').value;
+  const h=+document.getElementById('gHeight').value;
+  if(!date){alert('请选择日期');return}
+  if(!w||w<=0||w>30){alert('请填写正确的体重（1-30kg）');return}
+  if(!h||h<=0||h>120){alert('请填写正确的身高（30-120cm）');return}
+  S.growth.push({date, weight:w, height:h, rec:S.currentUser, time:new Date().toISOString()});
+  save(); renderAll();
+  toast('✅ 已记录 '+date+' · '+w+'kg · '+h+'cm');
+  document.getElementById('gWeight').value='';
+  document.getElementById('gHeight').value='';
+}
+function editBirthSize(){
+  const w=prompt('修改出生体重（kg）：', S.baby.birthWeight||4.22);
+  if(w===null) return;
+  const wv=parseFloat(w);
+  if(isNaN(wv)||wv<=0||wv>20){alert('体重格式不对');return}
+  const h=prompt('修改出生身高（cm）：', S.baby.birthHeight||51.5);
+  if(h===null) return;
+  const hv=parseFloat(h);
+  if(isNaN(hv)||hv<=0||hv>100){alert('身高格式不对');return}
+  S.baby.birthWeight=wv; S.baby.birthHeight=hv;
+  save(); renderAll();
+  toast('✅ 出生档案已更新');
+}
+function daysFromBirth(dateStr){
+  const birth=toDT(S.baby.birth); if(!birth) return 0;
+  const d=new Date(dateStr+'T00:00');
+  return Math.max(0,Math.round((d-birth)/86400000));
+}
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function renderGrowth(){
+  const data=(S.growth||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('birthW').textContent=(S.baby.birthWeight||4.22)+' kg';
+  document.getElementById('birthH').textContent=(S.baby.birthHeight||51.5)+' cm';
+  document.getElementById('growthSt').textContent=data.length?('已记录 '+data.length+' 次'):'--';
+  document.getElementById('growthList').innerHTML=data.length?data.slice().reverse().map(g=>{
+    const age=daysFromBirth(g.date);
+    return '<div class="li"><span><span class="time">'+g.date.slice(5)+'</span> <span class="meta">'+age+' 天 · '+g.weight+'kg · '+g.height+'cm</span>'+recTag(g.rec)+'<span class="edit-btn" onclick="editGrowth(\''+g.date+'\')">✎ 改</span></span></div>';
+  }).join(''):'<div class="empty">还没有记录，第一次记录吧～</div>';
+  // SVG 生长曲线（出生点 + 所有记录）
+  const pts=[{date:S.baby.birth,w:+(S.baby.birthWeight||4.22),h:+(S.baby.birthHeight||51.5)}].concat(data.map(g=>({date:g.date,w:+g.weight,h:+g.height})));
+  const el=document.getElementById('growthChart');
+  if(pts.length<2){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px 0">记录满 2 条后自动绘制生长曲线</div>';
+    return;
+  }
+  const W=640,H=180,P={l:42,r:14,t:14,b:26};
+  const allW=pts.map(p=>p.w), allH=pts.map(p=>p.h);
+  const wMin=Math.min.apply(null,allW), wMax=Math.max.apply(null,allW);
+  const hMin=Math.min.apply(null,allH), hMax=Math.max.apply(null,allH);
+  const wPad=(wMax-wMin)*0.15||0.3, hPad=(hMax-hMin)*0.15||2;
+  const X=i=>P.l+(W-P.l-P.r)*(i/(pts.length-1));
+  const Yw=v=>P.t+(H-P.t-P.b)*(1-(v-(wMin-wPad))/((wMax+wPad)-(wMin-wPad)));
+  const Yh=v=>P.t+(H-P.t-P.b)*(1-(v-(hMin-hPad))/((hMax+hPad)-(hMin-hPad)));
+  const wPts=pts.map((p,i)=>X(i).toFixed(1)+','+Yw(p.w).toFixed(1)).join(' ');
+  const hPts=pts.map((p,i)=>X(i).toFixed(1)+','+Yh(p.h).toFixed(1)).join(' ');
+  const green=cssVar('--green'), blue=cssVar('--blue');
+  let grid='';
+  for(let g=0;g<=3;g++){
+    const y=P.t+(H-P.t-P.b)*g/3;
+    grid+='<line x1="'+P.l+'" y1="'+y+'" x2="'+(W-P.r)+'" y2="'+y+'" stroke="#F3E4D9" stroke-width="1"/>';
+  }
+  let dots='';
+  pts.forEach((p,i)=>{
+    dots+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Yw(p.w).toFixed(1)+'" r="3.2" fill="'+green+'"/>';
+    dots+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Yh(p.h).toFixed(1)+'" r="3.2" fill="'+blue+'"/>';
+    if(i===0 || i===pts.length-1 || i%2===0){
+      dots+='<text x="'+X(i).toFixed(1)+'" y="'+(H-9)+'" font-size="9" fill="#A08E84" text-anchor="middle">'+(i===0?'出生':p.date.slice(5))+'</text>';
+    }
+  });
+  el.innerHTML=
+    '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+grid+
+    '<polyline points="'+wPts+'" fill="none" stroke="'+green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<polyline points="'+hPts+'" fill="none" stroke="'+blue+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
+    dots+
+    '<text x="3" y="'+(Yw(wMax+wPad)+3)+'" font-size="9" fill="'+green+'" font-weight="700">'+wMax.toFixed(1)+'</text>'+
+    '<text x="3" y="'+(Yw(wMin-wPad)-2)+'" font-size="9" fill="'+green+'">'+wMin.toFixed(1)+'</text>'+
+    '<text x="'+(W-8)+'" y="'+(Yh(hMax+hPad)+3)+'" font-size="9" fill="'+blue+'" font-weight="700" text-anchor="end">'+hMax.toFixed(1)+'</text>'+
+    '<text x="'+(W-8)+'" y="'+(Yh(hMin-hPad)-2)+'" font-size="9" fill="'+blue+'" text-anchor="end">'+hMin.toFixed(1)+'</text>'+
+    '</svg>';
+}
+
+/* ================= 疫苗 ================= */
+function vaccineTodayCount(){
+  const today=todayStr();
+  let n=0;
+  S.vaccines.forEach(v=>v.doses.forEach(d=>{if(d.date===today)n++}));
+  return n;
+}
+function fillVaxSel(){
+  const sel=document.getElementById('vaxSel');
+  sel.innerHTML=VACCINE_DEFS.map((v,i)=>'<option value="'+i+'">'+v.name+'</option>').join('');
+  fillDoseSel();
+}
+function fillDoseSel(){
+  const vi=+document.getElementById('vaxSel').value;
+  const v=VACCINE_DEFS[vi];
+  document.getElementById('doseSel').innerHTML=v.doseNames.map((dn,i)=>'<option value="'+i+'">'+dn+'</option>').join('');
+}
+document.getElementById('vaxSel').addEventListener('change',fillDoseSel);
+function recordVaccine(){
+  const vi=+document.getElementById('vaxSel').value;
+  const di=+document.getElementById('doseSel').value;
+  const date=document.getElementById('vaxDate').value||nowDateInput();
+  const v=S.vaccines[vi];
+  v.doses[di].date=date;
+  recomputeVaccine(v);
+  save(); renderAll();
+}
+function recomputeVaccine(v){
+  // 找到最后一个有日期的剂次，从它开始重算后续
+  let anchor=-1;
+  for(let i=0;i<v.doses.length;i++) if(v.doses[i].date) anchor=i;
+  if(anchor<0) return;
+  for(let i=anchor+1;i<v.doses.length;i++){
+    const prev=v.doses[i-1];
+    if(prev&&prev.date&&v.intervals[i-1]!=null){
+      v.doses[i].date=addMonthsStr(prev.date, v.intervals[i-1]);
+    }
+  }
+}
+function setVaxDate(vi,di,val){
+  S.vaccines[vi].doses[di].date=val||null;
+  recomputeVaccine(S.vaccines[vi]);
+  save(); renderAll();
+}
+function renderVaccines(){
+  const el=document.getElementById('vaxList');
+  const today=todayStr();
+  let html='';
+  S.vaccines.forEach((v,vi)=>{
+    v.doses.forEach((d,di)=>{
+      const done=!!d.date;
+      const isToday=d.date===today;
+      html+='<div class="vac-row '+(done?'done':'')+'" '+(isToday?'style="background:#FFF6E0;border-radius:10px;padding-left:8px"':'')+'>'+
+        '<span class="vname">'+v.name+'</span>'+
+        '<span class="dose">'+d.label+'</span>'+
+        '<input type="date" value="'+(d.date||'')+'" onchange="setVaxDate('+vi+','+di+',this.value)" placeholder="未接种">'+
+        (isToday?'<span class="x" style="color:var(--yellow)">今天</span>':'<span class="x" onclick="setVaxDate('+vi+','+di+',null)">✕</span>')+
+        '</div>';
+    });
+  });
+  el.innerHTML=html||'<div class="empty">暂无数据</div>';
+}
+
+/* ================= 辅食 ================= */
+function addFood(){
+  const date=document.getElementById('foodDate').value||todayStr();
+  const time=document.getElementById('foodTime').value||'';
+  const name=document.getElementById('foodName').value.trim();
+  if(!name){alert('请填写食物名称');return}
+  const amount=document.getElementById('foodAmt').value;
+  const note=document.getElementById('foodNote').value.trim();
+  S.foods.push({id:uid(), date, time, name, amount, note, rec:S.currentUser});
+  save(); renderAll();
+  toast('🍚 已记录：'+name);
+  document.getElementById('foodName').value='';
+  document.getElementById('foodNote').value='';
+}
+function renderFoods(){
+  const el=document.getElementById('foodList');
+  const st=document.getElementById('foodSt');
+  const list=S.foods.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  st.textContent=S.foods.length?(S.foods.length+' 条'):'--';
+  if(!list.length){ el.innerHTML='<div class="empty">还没有辅食记录，宝宝开始吃辅食后点上面添加～</div>'; return; }
+  el.innerHTML=list.map(f=>{
+    const sub=[f.time,f.amount,f.note].filter(Boolean).join(' · ');
+    return '<div class="li"><span><span class="time">'+f.date.slice(5)+'</span> <span class="meta">'+esc(f.name)+(sub?' · '+esc(sub):'')+'</span>'+recTag(f.rec)+'<span class="edit-btn" onclick="editFood(\''+f.id+'\')">✎ 改</span></span><span class="x" onclick="delFood(\''+f.id+'\')">✕</span></div>';
+  }).join('');
+}
+function editFood(id){
+  const f=S.foods.find(x=>x.id===id); if(!f) return;
+  openEditModal('✎ 修改辅食记录',
+    '<label>日期</label><input type="date" id="edFoodDate" value="'+f.date+'">'+
+    '<label>时间</label><input type="time" id="edFoodTime" value="'+(f.time||'')+'">'+
+    '<label>食物名称</label><input type="text" id="edFoodName" value="'+esc(f.name)+'">'+
+    '<label>进食量</label><select id="edFoodAmt" style="width:100%">'+['尝一尝','少量(1-2勺)','半碗','一碗'].map(o=>'<option '+(o===f.amount?'selected':'')+'>'+o+'</option>').join('')+'</select>'+
+    '<label>反应/备注</label><input type="text" id="edFoodNote" value="'+esc(f.note||'')+'">',
+    ()=>{
+      const date=document.getElementById('edFoodDate').value; if(!date){alert('请选择日期');return false}
+      const name=document.getElementById('edFoodName').value.trim(); if(!name){alert('请填写食物名称');return false}
+      f.date=date;
+      f.time=document.getElementById('edFoodTime').value;
+      f.name=name;
+      f.amount=document.getElementById('edFoodAmt').value;
+      f.note=document.getElementById('edFoodNote').value.trim();
+      save(); renderAll(); toast('✅ 辅食记录已修改');
+    });
+}
+function delFood(id){
+  if(!confirm('确定删除这条辅食记录？')) return;
+  S.foods=S.foods.filter(x=>x.id!==id);
+  save(); renderAll();
+}
+
+/* ================= 统计 ================= */
+function walk7d(){
+  let done=0,total=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=dstr(d); const wk=S.walks[ds];
+    if(!wk) continue;
+    ['am','pm'].forEach(slot=>{
+      const s=wk[slot];
+      if(s){total++; if(s.status==='done')done++}
+    });
+  }
+  return total? (done+'/'+total+' 次实施') : '近7天暂无';
+}
+
+/* ================= 成长参考渲染（按月龄自动切换） ================= */
+// 推算某月龄应接种的疫苗剂次（基于首剂月龄+间隔）
+function vaccinesAtMonth(age){
+  const out=[];
+  S.vaccines.forEach(v=>{
+    const first=VAX_FIRST_AGE[v.name];
+    if(first===undefined) return;
+    let m=first;
+    v.doseNames.forEach((label,idx)=>{
+      if(m===age) out.push(v.name+' '+label);
+      if(idx<v.intervals.length) m+=v.intervals[idx];
+    });
+  });
+  return out;
+}
+function saveBirth(){
+  const v=document.getElementById('birthInput').value;
+  if(!v){alert('请选择出生日期');return}
+  if(new Date(v)>new Date()){alert('出生日期不能是未来哦～');return}
+  S.baby.birth=v; save(); renderAll();
+  alert('✅ 已更新：多米出生于 '+v+'，当前 '+ageTxt());
+}
+// 进入新月龄时提示一次
+function notifyMonthChange(){
+  const age=getAgeMonths();
+  if(S.monthNotified===null){S.monthNotified=age; save(); return;}
+  if(S.monthNotified!==age){
+    fireAlert('🎉 多米进入 '+age+' 月龄啦！','成长参考已自动更新，快去看看吧');
+    S.monthNotified=age; save();
+  }
+}
+function monthRefHTML(m){
+  const ref=MONTH_REF[m]||MONTH_REF[12];
+  const vax=vaccinesAtMonth(m);
+  let h='';
+  ['大运动','精细动作','认知发展','语言','社交情绪','喂养与生活'].forEach(key=>{
+    h+='<h4><span class="ic">'+(REF_ICONS[key]||'📌')+'</span>'+key+'</h4><ul>';
+    (ref[key]||[]).forEach(x=>h+='<li>'+x+'</li>');
+    if(key==='喂养与生活' && vax.length){
+      h+='<li class="ref-vax">💉 本月应接种：<b>'+vax.join('、')+'</b>（以接种门诊安排为准）</li>';
+    }
+    h+='</ul>';
+  });
+  return h;
+}
+
+function renderRef(){
+  const age=getAgeMonths();
+  document.getElementById('mrefTitle').textContent=age+' 月龄成长参考';
+  const b=document.getElementById('birthInput'); if(b) b.value=S.baby.birth;
+  let h='<div class="mref">';
+  h+='<div class="ref-banner">🎂 '+S.baby.name+'出生于 <b>'+S.baby.birth+'</b>，现在 <b>'+ageTxt()+'</b>，进入 <b>'+age+' 月龄</b>阶段～</div>';
+  h+=monthRefHTML(age);
+  h+='<div class="tip">💡 每个月的参考内容会随多米月龄自动更新。看完觉得要加的"应该干的事"，告诉我直接加进每日活动里！</div>';
+  h+='</div>';
+  document.getElementById('mrefBody').innerHTML=h;
+
+  /* 提前学习：之后两个月各单独列一个选项（当前为 4 月龄时即 5、6 月龄），点开即可查看 */
+  renderAheadCard('card-mrefA1','mrefBodyA1','mrefA1Title', age+1);
+  renderAheadCard('card-mrefA2','mrefBodyA2','mrefA2Title', age+2);
+}
+
+function renderAheadCard(cardId, bodyId, titleId, m){
+  const card=document.getElementById(cardId); if(!card) return;
+  const tt=document.getElementById(titleId);
+  const rf=MONTH_REF[m];
+  if(!rf){
+    if(tt) tt.textContent=m+' 月龄参考';
+    document.getElementById(bodyId).innerHTML='<div class="mref"><div class="tip">暂未收录 '+m+' 月龄的参考内容～</div></div>';
+    return;
+  }
+  if(tt) tt.textContent=m+' 月龄参考';
+  let h='<div class="mref">';
+  h+=monthRefHTML(m);
+  h+='<div class="tip">💡 这是提前学习参考，等多米到 '+m+' 月龄时会自动出现在上方「'+m+' 月龄成长参考」里～</div>';
+  h+='</div>';
+  document.getElementById(bodyId).innerHTML=h;
+}
+
+/* ================= 主渲染 ================= */
+function renderAll(){
+  if(!S) return;
+  const today=todayStr();
+  clearTodayFired();
+  renderUserBar();
+
+  /* 月龄与成长参考 */
+  const age=getAgeMonths();
+  document.getElementById('babyChip').textContent=age+' 月龄 · 今天';
+  document.getElementById('babyChip').title=ageTxt();
+  document.getElementById('footerAge').textContent=age;
+  notifyMonthChange();
+  renderRef();
+
+  /* 概览 */
+  renderOverview();
+
+  /* 喂养 */
+  const feeds=feedOfDay(today);
+  document.getElementById('feedSt').textContent=feeds.length?('今日 '+feeds.length+' 次'):'--';
+  nextFeedHTML();
+  // 跨天上一顿：把「今天之前」最近的一顿也带进「今日喂养」列表，避免跨天后看不到
+  const prevDayLast=S.feedings.filter(f=>dstr(new Date(f.time))!==today).sort((a,b)=>new Date(b.time)-new Date(a.time))[0];
+  const feedFmt=f=>{
+    const isPrev=(prevDayLast&&f.id===prevDayLast.id);
+    return '<span class="time">'+hm(new Date(f.time))+'</span> &nbsp;<span class="meta">'+f.amount+'ml · '+(f.intervalLabel||'')+'</span>'+
+      (isPrev?' <span class="crossday-tag">跨天·上一顿</span>':'')+recTag(f.recorder)+
+      '<span class="edit-btn" onclick="editFeed(\''+f.id+'\')">✎ 改</span>';
+  };
+  let feedHtml=listHtml(feeds.slice().reverse().slice(0,10), feedFmt, '今天还没有喂奶记录');
+  if(prevDayLast && !feeds.some(f=>f.id===prevDayLast.id)){
+    feedHtml+='<div class="li crossday-li"><span>'+feedFmt(prevDayLast)+'</span><span class="x" onclick="delById(\''+prevDayLast.id+'\')">✕</span></div>';
+  }
+  document.getElementById('feedList').innerHTML=feedHtml;
+  renderFeedHist();
+  feedWeekStats();
+
+  /* 大小便 */
+  const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today);
+  const poop=S.potty.filter(p=>p.type==='poop'&&dstr(new Date(p.time))===today);
+  document.getElementById('pottySt').textContent='尿'+pee.length+' 便'+poop.length;
+  const pottyAll=pee.concat(poop).sort((a,b)=>b.time.localeCompare(a.time));
+  document.getElementById('pottyList').innerHTML=listHtml(pottyAll.slice(0,8),
+    p=>'<span class="time">'+hm(new Date(p.time))+'</span> &nbsp;<span class="meta">'+(p.type==='pee'?'💦 小便':'💩 大便')+'</span>'+recTag(p.recorder),'今天还没有记录');
+
+  /* 活动（分类计数） */
+  const todayActs=S.actCounts[today]||{};
+  let actTotal=0; Object.keys(todayActs).forEach(k=>actTotal+=todayActs[k]);
+  document.getElementById('actSt').textContent=actTotal?('今日 '+actTotal+' 次'):'--';
+  renderActs();
+
+  /* 维生素（隔天交替） */
+  const vit=S.vitamins[today];
+  const exp=expectedVitType();
+  const last=lastVitType();
+  document.getElementById('vitSt').innerHTML=vit?('✅ 已喂 '+typeName(vit.type)+recTag(vit.rec)):('今天该喂 '+typeName(exp));
+  document.getElementById('adBtn').className='btn '+(vit&&vit.type==='ad'?'btn-yellow':(!vit&&exp==='ad'?'btn-yellow':'btn-ghost'))+' big-btn';
+  document.getElementById('d3Btn').className='btn '+(vit&&vit.type==='d3'?'btn-blue':(!vit&&exp==='d3'?'btn-blue':'btn-ghost'))+' big-btn';
+  document.getElementById('adBtn').textContent=((vit&&vit.type==='ad')?'✅ ':'')+'喂 AD';
+  document.getElementById('d3Btn').textContent=((vit&&vit.type==='d3')?'✅ ':'')+'喂 D3';
+  const vitTip=document.getElementById('vitTip');
+  if(vit){
+    const u=USERS[userIdx(vit.rec)];
+    vitTip.style.display='block';
+    vitTip.innerHTML='✅ 今天已喂 <b>'+typeName(vit.type)+'</b>（'+vit.time+' '+u.emoji+u.name+'）<br><span class="sub">明天换喂 <b>'+typeName(vit.type==='ad'?'d3':'ad')+'</b> 哦～</span>';
+  }else{
+    vitTip.style.display='block';
+    vitTip.innerHTML='今天该喂 <b>'+typeName(exp)+'</b>'+(last?('（昨天喂的 '+typeName(last.type)+'）'):'')+'<br><span class="sub">喂完自动记住，明天自动提醒换另一个</span>';
+  }
+
+  /* 益生菌 */
+  const prob=S.probiotics[today];
+  const probDone=prob&&prob.done;
+  document.getElementById('probSt').innerHTML=probDone?('✅ '+prob.time+recTag(prob.rec)):'16:00 待喝';
+  const pb=document.getElementById('probBtn');
+  pb.textContent=probDone?'🦠 今天已喝（点一下取消）':'✅ 今天已喝益生菌';
+  pb.className='btn '+(probDone?'btn-ghost':'btn-primary')+' big-btn';
+
+  /* 遛弯（含忽略） */
+  const wk=S.walks[today]||{};
+  const am=wk.am, pm=wk.pm;
+  const wkTagTxt=s=>s?(s.status==='done'?'✅ 已实施 '+hm(new Date(s.time)):(s.status==='ignored'?'🚫 已忽略 '+hm(new Date(s.time)):(s.status==='missed'?'✖ 未实施 '+hm(new Date(s.time)):'待定'))):'待定';
+  const wkTagBg=s=>s&&s.status==='done'?'var(--green-soft)':(s&&s.status==='missed'?'var(--danger-soft)':(s&&s.status==='ignored'?'#EFF0F2':''));
+  document.getElementById('amTag').innerHTML=wkTagTxt(am)+recTag(am&&am.rec);
+  document.getElementById('amTag').style.background=wkTagBg(am);
+  document.getElementById('pmTag').innerHTML=wkTagTxt(pm)+recTag(pm&&pm.rec);
+  document.getElementById('pmTag').style.background=wkTagBg(pm);
+  const amDone=am&&am.status==='done', pmDone=pm&&pm.status==='done';
+  document.getElementById('walkSt').textContent=(amDone?1:0)+(pmDone?1:0)+'/2 次';
+  document.getElementById('walkStat').textContent=walk7d();
+  let walkRows='';
+  for(let i=0;i<7;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=dstr(d); const wk2=S.walks[ds];
+    const amS=wk2&&wk2.am, pmS=wk2&&wk2.pm;
+    const mk=s=>s?(s.status==='done'?'✅':(s.status==='ignored'?'🚫':(s.status==='missed'?'✖':'·'))):'·';
+    walkRows+='<div class="li"><span class="time">'+ds.slice(5)+'</span> <span class="meta">上午 '+mk(amS)+' &nbsp; 下午 '+mk(pmS)+'</span></div>';
+  }
+  document.getElementById('walkList').innerHTML=walkRows;
+
+  /* 洗澡（疫苗日跳过 / 手动忽略） */
+  const vaxToday=vaccineTodayCount()>0;
+  const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
+  const bathIgnored=!!(S.bathIgnores&&S.bathIgnores[today]);
+  document.getElementById('bathSt').textContent=bathsToday.length?('洗过 '+bathsToday.length+' 次'):(vaxToday?'疫苗日跳过':(bathIgnored?'已忽略':'20:00 待洗'));
+  const bvt=document.getElementById('bathVaxTip');
+  if(vaxToday){bvt.style.display='block';bvt.innerHTML='💉 今天接种了疫苗，<b>洗澡提醒已自动跳过</b>（接种后当天建议不洗澡，注意观察宝宝状态）。'}
+  else bvt.style.display='none';
+  const bib=document.getElementById('bathIgnoreBtn');
+  if(bathIgnored){bib.textContent='✅ 今天已忽略（点一下取消）';bib.className='btn btn-ignore big-btn';}
+  else{bib.textContent='⏭️ 今天不洗（忽略）';bib.className='btn btn-ignore big-btn';}
+  document.getElementById('bathList').innerHTML=listHtml(bathsToday.slice().reverse().slice(0,8),
+    b=>'<span class="time">'+hm(new Date(b.time))+'</span> &nbsp;<span class="meta">'+(b.type==='bath'?'🚿 洗澡':(b.type==='hair'?'💆 洗头':'🧴 擦油/擦粉'))+'</span>'+recTag(b.recorder),'今天还没有洗澡记录');
+
+  /* 睡眠（以分钟为核心） */
+  const sleeps=S.sleeps.filter(s=>sleepOnDay(s,today));
+  let totalMin=0; sleeps.forEach(s=>{ totalMin+=sleepMins(s) });
+  document.getElementById('sleepSt').textContent=S.sleeping?'😴 睡眠中':(totalMin>0?(sleeps.length+'次 · '+durStr(totalMin*60000)):'--');
+  document.getElementById('sleepStartBtn').disabled=!!S.sleeping;
+  document.getElementById('sleepEndBtn').disabled=!S.sleeping;
+  document.getElementById('sleepList').innerHTML=listHtml(sleeps.slice().reverse().slice(0,8),
+    s=>{
+      const mins=sleepMins(s);
+      const sub=s.end?('⏱ '+hm(new Date(s.start))+' → '+hm(new Date(s.end))):'📝 补录';
+      return '<span class="time">'+durStr(mins*60000)+'</span> <span class="meta">'+sub+'</span>'+recTag(s.recorder)+'<span class="edit-btn" onclick="editSleep(\''+s.id+'\')">✎ 改</span>';
+    },'今天还没有睡眠记录');
+  sleepWeekStats();
+  renderSleepHist();
+
+  /* 身高体重 */
+  renderGrowth();
+
+  /* 辅食 */
+  renderFoods();
+
+  /* 疫苗 */
+  const doneCount=S.vaccines.reduce((a,v)=>a+v.doses.filter(d=>d.date).length,0);
+  const totalCount=S.vaccines.reduce((a,v)=>a+v.doses.length,0);
+  document.getElementById('vaxSt').textContent=doneCount+'/'+totalCount+' 剂';
+  renderVaccines();
+  document.getElementById('vaxDate').value=nowDateInput();
+  document.getElementById('gDate').value=nowDateInput();
+  if(!document.getElementById('foodDate').value) document.getElementById('foodDate').value=nowDateInput();
+
+  /* 通知按钮状态 */
+  if('Notification' in window && Notification.permission==='granted'){
+    document.getElementById('noticeBar').innerHTML='🔔 系统提醒已开启 · 页面保持打开即可收到提醒。<b>多米，冲奶、喂药、遛弯、洗澡，一个都不会漏！</b>';
+  }
+  save();
+}
+
+/* ================= 通知 / 导入导出 ================= */
+function requestNotify(){
+  if(!('Notification' in window)){alert('当前浏览器不支持系统通知');return}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){alert('已开启系统提醒！');renderAll()}
+    else alert('未授权，仍可在页面内收到横幅+声音提醒');
+  });
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='duomi-data-'+todayStr()+'.json';
+  a.click();
+}
+function importData(){document.getElementById('importFile').click()}
+function doImport(e){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const d=JSON.parse(r.result);
+    if(!d.feedings) throw new Error('bad');
+    S=d; save(); renderAll(); alert('导入成功！');
+  }catch(err){alert('文件格式不对，导入失败')}};
+  r.readAsText(f);
+  e.target.value='';
+}
+
+/* ================= 折叠 ================= */
+function toggleCard(head){
+  var card=head.parentElement;
+  var willOpen=!card.classList.contains('open');
+  // 手风琴：先收起所有卡片，再按需展开当前项（一次只开一个，保持简洁）
+  document.querySelectorAll('#app .card').forEach(function(c){c.classList.remove('open')});
+  if(willOpen) card.classList.add('open');
+}
+function toggleCollapse(head){head.classList.toggle('open'); if(head.nextElementSibling) head.nextElementSibling.classList.toggle('open')}
+/* toast 轻提示 */
+function toast(msg){
+  const old=document.querySelector('.toast'); if(old) old.remove();
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=msg.replace(/\n/g,'<br>');
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},2600);
+}
+
+/* ================= 初始化 ================= */
+load();
+fillVaxSel();
+// 默认打开喂养卡
+document.getElementById('card-feed').classList.add('open');
+document.getElementById('feedTime').value=nowInput(); // 只在加载时初始化一次，避免刷新覆盖补录时间
+renderAll();
+checkReminders();
+setInterval(checkReminders, 20000);
+
+/* ===== APP 模式 tab 切换 ===== */
+function goTab(v, anchor){
+  showTab(v);
+  if(anchor){
+    var card=document.getElementById(anchor);
+    if(card){
+      document.querySelectorAll('#app .card').forEach(function(c){c.classList.remove('open')});
+      card.classList.add('open');
+      setTimeout(function(){ if(card.scrollIntoView) card.scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
+    }
+  }
+}
+function showTab(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active', el.id==='view-'+v));
+  document.querySelectorAll('#tabbar .tab').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  try{localStorage.setItem('duomi_tab', v)}catch(e){}
+}
+(function(){ try{ var t=localStorage.getItem('duomi_tab')||'overview'; if(t==='vaccine') t='growth'; showTab(t);}catch(e){ showTab('overview'); } })();
+</script>
+</body>
+</html>
