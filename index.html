@@ -308,13 +308,12 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
         </div>
         <div style="flex:1;min-width:120px">
           <span class="lbl">奶量 (ml)</span>
-          <input type="number" id="feedAmt" value="130" min="10" max="400" style="width:100%">
+          <input type="number" id="feedAmt" value="170" min="10" max="400" style="width:100%">
         </div>
       </div>
       <div class="row">
         <div class="amount-chips">
-          <span class="chip on" data-amt="130" onclick="pickAmt(this)">130ml · 隔4小时</span>
-          <span class="chip" data-amt="170" onclick="pickAmt(this)">170ml · 隔5小时</span>
+          <span class="chip on" data-amt="170" onclick="pickAmt(this)">170ml · 隔4小时45分</span>
         </div>
       </div>
       <div class="row">
@@ -1104,13 +1103,13 @@ document.getElementById('feedAmt').addEventListener('input',function(){
 });
 function addFeeding(){
   const tInput=document.getElementById('feedTime').value;
-  const amt=+document.getElementById('feedAmt').value||130;
+  const amt=+document.getElementById('feedAmt').value||170;
   if(!tInput){alert('请先填写喂养时间（忘记时间就选个大概时间补录）');return}
   const time=new Date(tInput.replace(' ','T'));
   if(time>T()){alert('喂养时间不能是未来哦～');return}
-  // 档位匹配：<=150 → 130档（4h），否则 170档（5h）
-  const interval = amt<=150 ? 240 : 300;
-  const intervalLabel = amt<=150 ? '130ml · 隔4小时' : '170ml · 隔5小时';
+  // 固定间隔：170ml · 隔4小时45分（285分钟）
+  const interval = 285;
+  const intervalLabel = '170ml · 隔4小时45分';
   const next = new Date(time.getTime()+interval*60000);
   S.feedings.push({id:uid(), time:time.toISOString(), amount:amt, intervalMin:interval, intervalLabel, nextTime:next.toISOString(), remindDone:false, recorder:S.currentUser});
   save(); renderAll();
@@ -1236,11 +1235,11 @@ function editFeed(id){
       const amt=+document.getElementById('edAmt').value;
       if(isNaN(time.getTime())){alert('喂养时间格式不对');return false}
       if(!amt||amt<10||amt>400){alert('奶量请在 10-400ml 之间');return false}
-      const interval=amt<=150?240:300;
+      const interval=285;
       f.time=time.toISOString();
       f.amount=amt;
       f.intervalMin=interval;
-      f.intervalLabel=amt<=150?'130ml · 隔4小时':'170ml · 隔5小时';
+      f.intervalLabel='170ml · 隔4小时45分';
       f.nextTime=new Date(time.getTime()+interval*60000).toISOString();
       save(); renderAll();
       toast('✅ 喂养记录已修改');
@@ -1309,7 +1308,7 @@ const ACT_GROUPS=[
   ]},
   {title:'🎡 前庭训练', color:'pink', items:[
     {t:'plane', n:'飞机抱', e:'✈️'},
-    {t:'hammer', n:'大摆锤', e:'🔨'},
+    {t:'hammer', n:'左右摇摆', e:'↔️'},
     {t:'sled', n:'拉雪橇', e:'🛷'},
     {t:'parachute', n:'降落伞', e:'🪂'},
     {t:'swing', n:'荡秋千', e:'🎠'},
