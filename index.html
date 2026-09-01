@@ -256,6 +256,44 @@ footer{text-align:center;font-size:12px;color:#C4B4AA;padding:18px 0 8px;line-he
 .trend-range .rchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:3px 13px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);user-select:none}
 .trend-range .rchip.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
 
+/* ===== 洗澡/护理：晨间必做项状态 ===== */
+.bath-must{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.bath-must .bm{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:8px 10px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--text)}
+.bath-must .bm.ok{border-color:var(--green);background:var(--green-soft);color:#3E8B5C}
+.bath-must .bm .s{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted)}
+.bath-must .bm.ok .s{color:#5FAF7A}
+
+/* ===== 一日流程（固定流程 + 自动打卡） ===== */
+.rt-top{background:#FFFDFB;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.rt-top .rt-sum{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:9px}
+.rt-num{font-size:24px;font-weight:900;color:var(--primary);line-height:1}
+.rt-num small{font-size:12px;font-weight:700;color:var(--muted)}
+.rt-tip{font-size:12px;font-weight:700;color:var(--muted);text-align:right}
+.rt-bar{height:9px;background:#F1E7DF;border-radius:999px;overflow:hidden}
+.rt-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#F5A45C,#5FAF7A);border-radius:999px;transition:width .35s}
+.rt-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.rt-tools .rchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);user-select:none;-webkit-tap-highlight-color:transparent}
+.rt-tools .rchip.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.rt-seg{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+.rt-seg-head{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FFF7F0;font-size:13px;font-weight:800;color:var(--text);border-bottom:1px solid var(--line)}
+.rt-seg-head .rt-time{font-size:11px;font-weight:700;color:var(--muted)}
+.rt-seg-head .rt-cnt{margin-left:auto;font-size:12px;font-weight:800;color:var(--muted);background:#F7EFEA;border-radius:999px;padding:2px 9px;flex:none}
+.rt-seg.all-done .rt-seg-head{background:var(--green-soft)}
+.rt-seg.all-done .rt-seg-head .rt-cnt{background:var(--green);color:#fff}
+.rt-list{background:#FBF6F0;padding:4px 12px 8px}
+.rt-item{position:relative;display:flex;align-items:center;gap:8px;padding:8px 0 8px 24px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.rt-item::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:#EFE2D7}
+.rt-item:first-child::before{top:16px}
+.rt-item:last-child::before{bottom:16px}
+.rt-item::after{content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #DCCFC5;box-sizing:border-box}
+.rt-item.done::after{background:var(--green);border-color:var(--green)}
+.rt-name{flex:1;font-size:13.5px;font-weight:700;color:var(--text);background:#fff;border:1px solid #EADFD5;border-radius:9px;padding:5px 9px;min-width:0}
+.rt-item.done .rt-name{background:var(--green-soft);border-color:var(--green);color:#3E8B5C}
+.rt-item.done .rt-name::after{content:' ✓';color:var(--green);font-weight:900}
+.rt-sub{flex:none;font-size:11px;color:var(--muted);padding-left:6px}
+.rt-item.done .rt-sub{color:#5FAF7A;font-weight:700}
+.rt-mark{flex:none;font-size:11px;color:#C0AC9E}
+
 @media (max-width:560px){
   .ov-grid{grid-template-columns:repeat(3,1fr)}
   .vac-row{grid-template-columns:80px 1fr 112px 30px}
@@ -368,7 +406,9 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
       <div class="row">
         <button class="btn btn-yellow big-btn" onclick="addPotty('pee')">💦 小便 +1</button>
         <button class="btn btn-green big-btn" onclick="addPotty('poop')">💩 大便 +1</button>
+        <button class="btn btn-blue big-btn" onclick="addPotty('diaper')">🧷 换尿布 +1</button>
       </div>
+      <p class="mini-stat" style="margin-top:8px">三项都按<b>次数</b>累计：换一次点一次，不用区分先后。</p>
       <div class="list">
         <div class="list-title">今日记录 <span class="del-all" onclick="clearToday('potty')">清空今日</span></div>
         <div id="pottyList"></div>
@@ -384,6 +424,14 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
     <div class="card-body">
       <p class="mini-stat" style="margin-bottom:12px">点活动名变彩色（表示今天做过），再点 <b>＋1</b> 记一次次数。</p>
       <div id="actGroups"></div>
+      <div class="row" style="margin-top:12px;align-items:flex-end">
+        <div style="flex:1;min-width:120px">
+          <span class="lbl">🦒 抬头训练时长（分钟）</span>
+          <input type="number" id="headupMin" min="1" max="180" value="3" style="width:100%">
+        </div>
+        <button class="btn btn-green" onclick="addActDur('headup')">＋ 记录抬头</button>
+      </div>
+      <p class="mini-stat" style="margin-top:10px">🦒 <b>抬头训练按分钟累计</b>：填好时长点「记录抬头」，一天可多次累加；直接点上面格子里的 <b>＋</b> 也按当前填的时长记。其他活动仍是点一次记一次。</p>
     </div>
   </div>
 
@@ -453,12 +501,18 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
         <button class="btn btn-blue big-btn" onclick="addBath('bath')">🚿 洗澡了</button>
         <button class="btn btn-pink big-btn" onclick="addBath('hair')">💆 洗头了</button>
-        <button class="btn btn-yellow big-btn" onclick="addBath('lotion')">🧴 擦油/粉</button>
+        <button class="btn btn-yellow big-btn" onclick="addBath('oil')">🧴 早起擦油</button>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <button class="btn btn-green big-btn" onclick="addBath('face')">🧼 早起洗脸</button>
+        <button class="btn btn-green big-btn" onclick="addBath('wipe')">🍑 温水擦屁屁</button>
+        <button class="btn btn-pink big-btn" onclick="addBath('powder')">🌸 擦粉 +1</button>
+      </div>
+      <div id="bathMust" class="bath-must"></div>
       <div class="row" style="margin-top:10px">
-        <button class="btn btn-ignore big-btn" id="bathIgnoreBtn" onclick="toggleBathIgnore()">⏭️ 今天不洗（忽略）</button>
+        <button class="btn btn-ignore big-btn" id="bathIgnoreBtn" onclick="toggleBathIgnore()">⏭️ 今天不洗澡（忽略）</button>
       </div>
-      <p class="mini-stat" style="margin-top:10px">⏰ 每日提醒时间：<b>晚上 8:00</b> · 打疫苗当天自动跳过；天冷或疫苗后不想洗，点「忽略」当天不再提醒。</p>
+      <p class="mini-stat" style="margin-top:10px">⏰ 洗澡提醒：<b>晚上 8:00</b> · 打疫苗当天自动跳过；点「忽略」当天不再提醒<b>洗澡</b>。<br>🧼 早起洗脸、🍑 温水擦屁屁 属每日必做，<b>不能忽略</b>；🌸 擦粉按次数记，红屁屁 / 潮湿时随时 ＋1。</p>
       <div class="list">
         <div class="list-title">今日记录 <span class="del-all" onclick="clearToday('bath')">清空今日</span></div>
         <div id="bathList"></div>
@@ -668,11 +722,37 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
     数据保存在本浏览器中，页面需保持打开提醒才会响
   </footer>
   </div><!-- /view-more -->
+
+  <!-- 一日流程（固定流程 + 自动打卡） -->
+  <div class="view" id="view-routine">
+    <div class="view-back" onclick="showTab('overview')">‹ 返回总览</div>
+    <div class="card open" id="card-routine">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="ic">📅</span><span class="tt">一日流程 · 今日打卡</span><span class="st" id="routineSt">--</span><span class="arrow">▼</span>
+      </div>
+      <div class="card-body">
+        <div class="rt-top">
+          <div class="rt-sum">
+            <div class="rt-num"><span id="rtDone">0</span><small> / <span id="rtTotal">0</span> 项</small></div>
+            <div class="rt-tip" id="rtTip">今天还没开始</div>
+          </div>
+          <div class="rt-bar"><i id="rtBar"></i></div>
+          <div class="rt-tools">
+            <span class="rchip" id="rchipOnly" onclick="toggleRoutineOnly()">👀 只看没做的</span>
+            <span class="rchip" onclick="resetRoutineManual()">↺ 重置手动标记</span>
+          </div>
+        </div>
+        <div id="rtBody"></div>
+        <p class="mini-stat" style="margin-top:10px;line-height:1.7">📌 <b>流程固定不变，这个页面只负责"看今天做到哪了"</b>：在别的模块记过的事，这里会自动变绿打勾 ✓。<br>👆 点任意一项可<b>手动标记</b>已完成/未完成（会出现 ✋ 标记）。<br>⚠️ 目前 <b>陪玩、啃牙胶</b> 这两项还没有可对应的模块，先手动点；看完效果我们再决定怎么给它们加对应。</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <nav class="tabbar" id="tabbar">
   <button class="tab active" data-view="overview" onclick="showTab('overview')"><span class="ic">🏠</span><span class="lb">总览</span></button>
   <button class="tab" data-view="record" onclick="showTab('record')"><span class="ic">📋</span><span class="lb">记录</span></button>
+  <button class="tab" data-view="routine" onclick="showTab('routine')"><span class="ic">📅</span><span class="lb">日程</span></button>
   <button class="tab" data-view="food" onclick="showTab('food')"><span class="ic">🍚</span><span class="lb">辅食</span></button>
   <button class="tab" data-view="growth" onclick="showTab('growth')"><span class="ic">📈</span><span class="lb">成长</span></button>
   <button class="tab" data-view="more" onclick="showTab('more')"><span class="ic">⚙️</span><span class="lb">更多</span></button>
@@ -828,6 +908,7 @@ function defaultState(){
     probiotics:{}, // date -> {done:bool,time}
     walks:{},      // date -> {am:{status,time},pm:{status,time}} status: done|missed|ignored
     bathIgnores:{},// date -> {time,rec}
+    routineManual:{},// date -> {itemId:true(手动完成)/false(手动取消)}  一日流程的手动标记
     vaccines: VACCINE_DEFS.map(v=>({name:v.name,doseNames:v.doseNames,intervals:v.intervals,doses:v.doseNames.map(l=>({label:l,date:null}))})),
     sleeping:null,
     remindersFired:{},
@@ -846,8 +927,17 @@ function load(){
   if(!S.growth) S.growth=[];
   if(!S.foods) S.foods=[];
   if(!S.bathIgnores) S.bathIgnores={};
+  if(!S.routineManual) S.routineManual={};
   migrateVitamins();
   migrateActivities();
+  migrateBaths();
+}
+// 旧洗澡类型 'lotion'(擦油/粉) -> 'oil'(早起擦油)
+function migrateBaths(){
+  if(!S.baths) S.baths=[];
+  let changed=false;
+  S.baths.forEach(b=>{ if(b.type==='lotion'){ b.type='oil'; changed=true; } });
+  if(changed) save();
 }
 // 维生素旧格式 {ad:true,d3:false} -> {type:'ad'}
 function migrateVitamins(){
@@ -1065,24 +1155,28 @@ function renderOverview(){
   const amDone=am&&am.status==='done', pmDone=pm&&pm.status==='done';
   html+=ovCard('🌤️','遛弯', amTxt+' · '+pmTxt, (amDone&&pmDone)?'ok':'', 'record|card-walk');
 
-  // 洗澡（疫苗日跳过 / 手动忽略）
+  // 洗澡 / 晨间护理（疫苗日跳过 / 手动忽略）
   const vaxToday=S.vaccines.some(v=>v.doses.some(d=>d.date===today));
   const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
+  const bt=t=>bathsToday.filter(b=>b.type===t).length;
   const bathIgnored=!!(S.bathIgnores&&S.bathIgnores[today]);
+  const nBath=bt('bath');
+  const mustDone=(bt('face')?1:0)+(bt('wipe')?1:0)+(bt('oil')?1:0);
   if(vaxToday){
     html+=ovCard('🛁','洗澡（疫苗日跳过）','--','skip','record|card-bath');
   }else if(bathIgnored){
-    html+=ovCard('🛁','洗澡（已忽略）','--','ig','record|card-bath');
+    html+=ovCard('🛁','洗澡（已忽略）','晨护 '+mustDone+'/3','ig','record|card-bath');
   }else{
-    const bDone=bathsToday.length>0;
-    const bOverdue=!bDone&&minutesUntil('20:00')<0;
-    html+=ovCard('🛁','洗澡', bDone?'洗过了 ✅':'20:00 待洗', bDone?'ok':(bOverdue?'overdue':''), 'record|card-bath');
+    const bOverdue=!nBath&&minutesUntil('20:00')<0;
+    html+=ovCard('🛁','洗澡 · 晨护', (nBath?'洗过了 ✅':'20:00 待洗')+' · 晨护 '+mustDone+'/3',
+      (nBath&&mustDone===3)?'ok':(bOverdue?'overdue':''), 'record|card-bath');
   }
 
-  // 大小便
+  // 大小便（含换尿布次数）
   const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today).length;
   const poop=S.potty.filter(p=>p.type==='poop'&&dstr(new Date(p.time))===today).length;
-  html+=ovCard('🚽','大小便', '小便 '+pee+' · 大便 '+poop,'', 'record|card-potty');
+  const dpr=S.potty.filter(p=>p.type==='diaper'&&dstr(new Date(p.time))===today).length;
+  html+=ovCard('🚽','大小便 · 换尿布', '小便 '+pee+' · 大便 '+poop+' · 尿布 '+dpr,'', 'record|card-potty');
 
   // 睡眠（以分钟为核心）
   const sleeps=S.sleeps.filter(s=>sleepOnDay(s,today));
@@ -1094,10 +1188,15 @@ function renderOverview(){
   const foodToday=S.foods.filter(f=>f.date===today);
   html+=ovCard('🍚','今日辅食', foodToday.length?('已添加 '+foodToday.length+' 次'):'尚未添加', foodToday.length?'ok':'', 'food');
 
-  // 活动（计数制）
+  // 活动（计数制；时长类如抬头训练单独算分钟，不计入次数）
   const todayActs=S.actCounts[today]||{};
-  let actTotal=0; Object.keys(todayActs).forEach(k=>actTotal+=todayActs[k]);
-  html+=ovCard('🏃','今日活动', actTotal+' 次','', 'record|card-activity');
+  let actTotal=0; Object.keys(todayActs).forEach(k=>{ if(!actDurType(k)) actTotal+=todayActs[k] });
+  const headupM=todayActs.headup||0;
+  html+=ovCard('🏃','今日活动', actTotal+' 次'+(headupM?(' · 抬头 '+headupM+' 分'):''),'', 'record|card-activity');
+
+  // 一日流程（固定流程打卡）
+  const rt=routineEval(today);
+  html+=ovCard('📅','一日流程', rt.done+'/'+rt.total+(rt.done===rt.total?' 🎉':''), rt.done===rt.total?'ok':'', 'routine');
 
   // 今日各人记录数统计
   const rec={};
@@ -1431,6 +1530,7 @@ function editGrowth(dateStr){
 }
 
 /* ================= 各模块操作 ================= */
+const POTTY_LABEL={pee:'💦 小便', poop:'💩 大便', diaper:'🧷 换尿布'};
 function addPotty(type){
   S.potty.push({id:uid(), time:new Date().toISOString(), type, recorder:S.currentUser});
   save(); renderAll();
@@ -1444,6 +1544,7 @@ const ACT_GROUPS=[
   {title:'🤸 大运动练习', color:'green', items:[
     {t:'grasp', n:'抓握练习', e:'✊'},
     {t:'turnover', n:'翻身练习', e:'🔄'},
+    {t:'headup', n:'抬头训练', e:'🦒', dur:true},
     {t:'situp', n:'拉坐练习', e:'🙆'},
     {t:'crossleg', n:'交叉抬腿', e:'🦵'},
   ]},
@@ -1460,6 +1561,11 @@ ACT_GROUPS.forEach(g=>g.items.forEach(it=>ACT_NAMES[it.t]=it.e+' '+it.n));
 function actCount(type){
   const d=S.actCounts[todayStr()];
   return d?(d[type]||0):0;
+}
+// 按时长（分钟）累计的活动，不计入"次数"
+function actDurType(type){
+  for(const g of ACT_GROUPS) for(const it of g.items) if(it.t===type) return !!it.dur;
+  return false;
 }
 function actSelected(type){
   const d=S.actSelected||{};
@@ -1479,6 +1585,19 @@ function addAct(type){
   S.actSelected[today+':'+type]=true; // 记录过自动选中变色
   save(); renderAll();
 }
+/* 按时长累计的活动（抬头训练，单位：分钟） */
+function addActDur(type){
+  const inp=document.getElementById('headupMin');
+  const m=inp?(+inp.value||0):0;
+  if(m<=0||m>180){ alert('请填写 1-180 之间的分钟数'); return; }
+  const today=todayStr();
+  if(!S.actCounts[today]) S.actCounts[today]={};
+  S.actCounts[today][type]=(S.actCounts[today][type]||0)+m;
+  if(!S.actSelected) S.actSelected={};
+  S.actSelected[today+':'+type]=true;
+  save(); renderAll();
+  toast('✅ 抬头训练 +'+m+' 分钟，今日累计 '+S.actCounts[today][type]+' 分钟');
+}
 function renderActs(){
   const el=document.getElementById('actGroups');
   const today=todayStr();
@@ -1489,10 +1608,12 @@ function renderActs(){
       const c=actCount(it.t);
       total+=c;
       const on=actSelected(it.t);
+      const cntTxt=it.dur?((c||0)+'分'):(c||'0');
+      const plusCall=it.dur?('addActDur(\''+it.t+'\')'):('addAct(\''+it.t+'\')');
       return '<div class="act-item'+(on?' on':'')+'" onclick="toggleAct(\''+it.t+'\')">'+
         '<span class="an"><span class="ae">'+it.e+'</span>'+it.n+'</span>'+
-        '<span class="cnt">'+(c||'0')+'</span>'+
-        '<span class="plus" onclick="event.stopPropagation();addAct(\''+it.t+'\')">＋</span>'+
+        '<span class="cnt">'+cntTxt+'</span>'+
+        '<span class="plus" onclick="event.stopPropagation();'+plusCall+'">＋</span>'+
         '</div>';
     }).join('');
     h+='<div class="act-group '+g.color+'">'+
@@ -1500,6 +1621,197 @@ function renderActs(){
       '<div class="act-grid">'+items+'</div></div>';
   });
   el.innerHTML=h;
+}
+
+/* ================= 一日流程（固定流程 + 自动打卡） =================
+   规则：
+   1) 流程固定，页面只做"看今天做到哪了"，不提供增删。
+   2) 每项可通过 link 关联到别的模块：link 在第 k 次出现时，需要当日累计 >= need*k
+      （计数类 need=1，即"第 k 次需要累计 k 条"；时长类 need=分钟，抬头 need=3）。
+   3) 手动标记优先：点一下 = 手动完成(✋)，再点 = 手动取消，第三下 = 恢复自动判断。
+   4) 必做项（must）只是提示，不参与忽略逻辑。
+*/
+const ROUTINE=[
+  {t:'早起', time:'6:30-7:30', ic:'🌅', items:[
+    {n:'换尿布（小便）', e:'🧷', link:'diaper'},
+    {n:'温水擦屁屁',     e:'🍑', link:'wipe',   must:true},
+    {n:'洗脸',           e:'🧼', link:'face',   must:true},
+    {n:'早起擦油',       e:'🧴', link:'oil'},
+    {n:'大便',           e:'💩', link:'poop'},
+    {n:'换尿布（大便）', e:'🧷', link:'diaper'},
+  ]},
+  {t:'上午活动', time:'8:00-9:00', ic:'☀️', items:[
+    {n:'连续翻身',       e:'🔄', link:'act:turnover', tip:'翻身练习'},
+    {n:'看玩具稳定情绪', e:'🎵', link:'act:music',    tip:'听儿歌'},
+    {n:'喝奶',           e:'🍼', link:'feed'},
+  ]},
+  {t:'上午（睡醒后）', time:'9:15-10:15', ic:'🌤️', items:[
+    {n:'哄睡',         e:'😴', link:'sleep'},
+    {n:'换尿布（小便）', e:'🧷', link:'diaper'},
+    {n:'喂 AD/D3',     e:'💊', link:'vitamin'},
+    {n:'阳台晒太阳',   e:'🌞', link:'walk:am', tip:'上午遛弯'},
+    {n:'抓握练习',     e:'✊', link:'act:grasp'},
+    {n:'陪玩',         e:'🧸'},
+  ]},
+  {t:'中午（睡醒后）', time:'11:30-12:30', ic:'🍚', items:[
+    {n:'哄睡',         e:'😴', link:'sleep'},
+    {n:'换尿布（小便）', e:'🧷', link:'diaper'},
+    {n:'抬头训练',     e:'🦒', link:'act:headup', need:3, tip:'累计满 3 分钟算一次'},
+    {n:'啃牙胶',       e:'🦷'},
+    {n:'换尿布（大便）', e:'🧷', link:'diaper'},
+    {n:'拉坐练习',     e:'🙆', link:'act:situp'},
+    {n:'追视练习',     e:'🔴⚫', link:'act:cards', tip:'红黑视觉卡'},
+  ]},
+  {t:'下午', time:'13:45-14:00', ic:'🌇', items:[
+    {n:'喝奶', e:'🍼', link:'feed'},
+    {n:'陪玩', e:'🧸'},
+  ]},
+  {t:'下午（睡醒后）', time:'14:30-15:30', ic:'🛝', items:[
+    {n:'哄睡',     e:'😴', link:'sleep'},
+    {n:'换尿布',   e:'🧷', link:'diaper'},
+    {n:'飞机抱',   e:'✈️', link:'act:plane'},
+    {n:'遛弯',     e:'🌳', link:'walk:pm'},
+    {n:'抬头训练', e:'🦒', link:'act:headup', need:3, tip:'累计满 3 分钟算一次'},
+  ]},
+  {t:'傍晚', time:'17:30-18:45', ic:'🌆', items:[
+    {n:'哄睡',     e:'😴', link:'sleep'},
+    {n:'左右摇摆', e:'↔️', link:'act:hammer'},
+    {n:'喝奶',     e:'🍼', link:'feed'},
+    {n:'陪玩',     e:'🧸'},
+  ]},
+  {t:'晚上', time:'19:45-20:00', ic:'🛁', items:[
+    {n:'洗澡',   e:'🚿', link:'bath'},
+    {n:'拉雪橇', e:'🛷', link:'act:sled'},
+    {n:'降落伞', e:'🪂', link:'act:parachute'},
+    {n:'荡秋千', e:'🎠', link:'act:swing'},
+  ]},
+  {t:'夜间', time:'21:15-04:30', ic:'🌙', items:[
+    {n:'哄睡', e:'😴', link:'sleep'},
+    {n:'喝奶', e:'🍼', link:'feed'},
+    {n:'喝奶', e:'🍼', link:'feed'},
+  ]},
+];
+
+/* 汇总今日各数据源的"可用量" */
+function routinePools(day){
+  const on=r=>dstr(new Date(r.time))===day;
+  const n=(arr,f)=>arr.filter(f).length;
+  const p={
+    feed:   n(S.feedings, on),
+    pee:    n(S.potty, r=>on(r)&&r.type==='pee'),
+    poop:   n(S.potty, r=>on(r)&&r.type==='poop'),
+    diaper: n(S.potty, r=>on(r)&&r.type==='diaper'),
+    bath:   n(S.baths, r=>on(r)&&r.type==='bath'),
+    face:   n(S.baths, r=>on(r)&&r.type==='face'),
+    wipe:   n(S.baths, r=>on(r)&&r.type==='wipe'),
+    oil:    n(S.baths, r=>on(r)&&r.type==='oil'),
+    sleep:  S.sleeps.filter(s=>sleepOnDay(s,day)).length,
+    vitamin:S.vitamins[day]?1:0,
+    'walk:am': (S.walks[day]&&S.walks[day].am&&S.walks[day].am.status==='done')?1:0,
+    'walk:pm': (S.walks[day]&&S.walks[day].pm&&S.walks[day].pm.status==='done')?1:0,
+  };
+  const ac=S.actCounts[day]||{};
+  Object.keys(ac).forEach(k=>{ p['act:'+k]=ac[k]||0 });
+  return p;
+}
+
+/* 计算今日每项完成情况 */
+function routineEval(day){
+  const pools=routinePools(day);
+  const manual=(S.routineManual&&S.routineManual[day])||{};
+  const seen={};
+  let done=0, total=0;
+  const segs=ROUTINE.map((sg,si)=>{
+    let sdone=0;
+    const items=sg.items.map((it,ii)=>{
+      const id='s'+(si+1)+'i'+(ii+1);
+      total++;
+      let auto=false, needN=0, have=0;
+      if(it.link){
+        seen[it.link]=(seen[it.link]||0)+1;
+        const need=it.need||1;
+        needN=need*seen[it.link];
+        have=pools[it.link]||0;
+        auto=have>=needN;
+      }
+      const mv=manual[id];
+      const isDone = (mv===true) ? true : ((mv===false) ? false : auto);
+      if(isDone){ done++; sdone++; }
+      let sub;
+      if(isDone){
+        sub = (mv!==undefined) ? '✅ 手动' : '✅ 已完成';
+      }else if(it.link){
+        sub = it.need ? ('需累计 '+needN+' 分 · 现 '+have+' 分') : ('需累计 '+needN+' 次 · 现 '+have);
+      }else{
+        sub = '👆 点一下手动记';
+      }
+      return {id, n:it.n, e:it.e, tip:it.tip, must:!!it.must, link:it.link||'',
+              done:isDone, auto, manual:(mv!==undefined), have, need:needN, sub};
+    });
+    return {t:sg.t, time:sg.time, ic:sg.ic, items, sdone, stotal:sg.items.length, all:(sdone===sg.items.length)};
+  });
+  return {segs, done, total};
+}
+
+let RT_ONLY=false; // 只看没做的
+function toggleRoutineOnly(){ RT_ONLY=!RT_ONLY; renderRoutine(); }
+function resetRoutineManual(){
+  const d=todayStr();
+  if(!S.routineManual) S.routineManual={};
+  const m=S.routineManual[d];
+  if(!m||!Object.keys(m).length){ toast('今天没有手动标记'); return; }
+  if(!confirm('清除今天的所有手动标记？\n（自动判断的结果不受影响）')) return;
+  delete S.routineManual[d]; save(); renderAll(); toast('已重置今天的手动标记');
+}
+function findRoutineItem(day,id){
+  let hit=null;
+  routineEval(day).segs.forEach(sg=>sg.items.forEach(it=>{ if(it.id===id) hit=it }));
+  return hit;
+}
+// 点一下就翻转"当前显示的状态"；翻转后若与自动判断一致，则自动清掉手动标记（去掉 ✋）
+function toggleRoutineItem(id){
+  const d=todayStr();
+  const it=findRoutineItem(d,id);
+  if(!it) return;
+  if(!S.routineManual) S.routineManual={};
+  if(!S.routineManual[d]) S.routineManual[d]={};
+  const m=S.routineManual[d];
+  const next=!it.done;
+  if(next===it.auto) delete m[id];  // 与自动一致 -> 恢复自动判断
+  else m[id]=next;                  // 与自动相反 -> 记为手动
+  save(); renderAll();
+}
+function renderRoutine(){
+  const body=document.getElementById('rtBody');
+  if(!body) return;
+  const r=routineEval(todayStr());
+  let h='';
+  r.segs.forEach(sg=>{
+    const items=RT_ONLY ? sg.items.filter(i=>!i.done) : sg.items;
+    if(RT_ONLY && !items.length) return;
+    h+='<div class="rt-seg'+(sg.all?' all-done':'')+'">'+
+      '<div class="rt-seg-head"><span>'+sg.ic+' '+sg.t+'</span>'+
+        '<span class="rt-time">'+sg.time+'</span>'+
+        '<span class="rt-cnt">'+sg.sdone+'/'+sg.stotal+'</span></div>'+
+      '<div class="rt-list">'+
+      items.map(it=>(
+        '<div class="rt-item'+(it.done?' done':'')+'" onclick="toggleRoutineItem(\''+it.id+'\')">'+
+          '<span class="rt-name">'+it.e+' '+it.n+(it.must?' <b style="color:#E87B9C">必做</b>':'')+'</span>'+
+          (it.manual?'<span class="rt-mark">✋</span>':'')+
+          '<span class="rt-sub">'+it.sub+'</span>'+
+        '</div>'
+      )).join('')+
+      '</div></div>';
+  });
+  if(RT_ONLY && !h) h='<div class="empty">🎉 今天的流程全部完成了！</div>';
+  body.innerHTML=h;
+  const pct=r.total?Math.round(r.done/r.total*100):0;
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v};
+  set('rtDone', r.done); set('rtTotal', r.total);
+  const bar=document.getElementById('rtBar'); if(bar) bar.style.width=pct+'%';
+  set('rtTip', r.total? (r.done===r.total?'全部完成 🎉':('还差 '+(r.total-r.done)+' 项 · '+pct+'%')) : '今天还没开始');
+  set('routineSt', r.done+'/'+r.total);
+  const oc=document.getElementById('rchipOnly'); if(oc) oc.className='rchip'+(RT_ONLY?' on':'');
 }
 
 /* ================= 记录人账户 ================= */
@@ -1577,9 +1889,12 @@ function toggleBathIgnore(){
   else{ S.bathIgnores[today]={time:new Date().toISOString(), rec:S.currentUser}; toast('已忽略，今天不再提醒洗澡'); }
   save(); renderAll();
 }
+const BATH_LABEL={bath:'🚿 洗澡', hair:'💆 洗头', face:'🧼 早起洗脸', wipe:'🍑 温水擦屁屁', oil:'🧴 早起擦油', powder:'🌸 擦粉'};
 function addBath(type){
   S.baths.push({id:uid(), time:new Date().toISOString(), type, recorder:S.currentUser});
   save(); renderAll();
+  if(type==='face') toast('🧼 早起洗脸已记录');
+  if(type==='wipe') toast('🍑 温水擦屁屁已记录');
 }
 function sleepMins(s){ return s.minutes!=null ? s.minutes : (s.end ? Math.round((new Date(s.end)-new Date(s.start))/60000) : 0) }
 function sleepOnDay(s, day){ if(dstr(new Date(s.start))===day) return true; if(s.end && dstr(new Date(s.end))===day) return true; return false; }
@@ -2006,16 +2321,21 @@ function renderAll(){
   /* 大小便 */
   const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today);
   const poop=S.potty.filter(p=>p.type==='poop'&&dstr(new Date(p.time))===today);
-  document.getElementById('pottySt').textContent='尿'+pee.length+' 便'+poop.length;
-  const pottyAll=pee.concat(poop).sort((a,b)=>b.time.localeCompare(a.time));
+  const diaper=S.potty.filter(p=>p.type==='diaper'&&dstr(new Date(p.time))===today);
+  document.getElementById('pottySt').textContent='尿'+pee.length+' 便'+poop.length+' 布'+diaper.length;
+  const pottyAll=pee.concat(poop,diaper).sort((a,b)=>b.time.localeCompare(a.time));
   document.getElementById('pottyList').innerHTML=listHtml(pottyAll.slice(0,8),
-    p=>'<span class="time">'+hm(new Date(p.time))+'</span> &nbsp;<span class="meta">'+(p.type==='pee'?'💦 小便':'💩 大便')+'</span>'+recTag(p.recorder),'今天还没有记录');
+    p=>'<span class="time">'+hm(new Date(p.time))+'</span> &nbsp;<span class="meta">'+(POTTY_LABEL[p.type]||'记录')+'</span>'+recTag(p.recorder),'今天还没有记录');
 
   /* 活动（分类计数） */
   const todayActs=S.actCounts[today]||{};
-  let actTotal=0; Object.keys(todayActs).forEach(k=>actTotal+=todayActs[k]);
-  document.getElementById('actSt').textContent=actTotal?('今日 '+actTotal+' 次'):'--';
+  let actTotal=0; Object.keys(todayActs).forEach(k=>{ if(!actDurType(k)) actTotal+=todayActs[k] });
+  const headupM=todayActs.headup||0;
+  document.getElementById('actSt').textContent=(actTotal?('今日 '+actTotal+' 次'):'--')+(headupM?(' · 抬头 '+headupM+' 分'):'');
   renderActs();
+
+  /* 一日流程（固定流程 + 自动打卡） */
+  renderRoutine();
 
   /* 维生素（隔天交替） */
   const vit=S.vitamins[today];
@@ -2070,15 +2390,28 @@ function renderAll(){
   const vaxToday=vaccineTodayCount()>0;
   const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
   const bathIgnored=!!(S.bathIgnores&&S.bathIgnores[today]);
-  document.getElementById('bathSt').textContent=bathsToday.length?('洗过 '+bathsToday.length+' 次'):(vaxToday?'疫苗日跳过':(bathIgnored?'已忽略':'20:00 待洗'));
+  const bt=t=>bathsToday.filter(b=>b.type===t).length;
+  const nBath=bt('bath'), nFace=bt('face'), nWipe=bt('wipe'), nOil=bt('oil'), nPowder=bt('powder');
+  const mustDone=(nFace?1:0)+(nWipe?1:0)+(nOil?1:0);
+  document.getElementById('bathSt').textContent=
+    vaxToday?'疫苗日跳过':('晨护 '+mustDone+'/3 · 洗澡'+(nBath?' ✓':(bathIgnored?' 已忽略':' 待洗')));
   const bvt=document.getElementById('bathVaxTip');
   if(vaxToday){bvt.style.display='block';bvt.innerHTML='💉 今天接种了疫苗，<b>洗澡提醒已自动跳过</b>（接种后当天建议不洗澡，注意观察宝宝状态）。'}
   else bvt.style.display='none';
   const bib=document.getElementById('bathIgnoreBtn');
   if(bathIgnored){bib.textContent='✅ 今天已忽略（点一下取消）';bib.className='btn btn-ignore big-btn';}
   else{bib.textContent='⏭️ 今天不洗（忽略）';bib.className='btn btn-ignore big-btn';}
-  document.getElementById('bathList').innerHTML=listHtml(bathsToday.slice().reverse().slice(0,8),
-    b=>'<span class="time">'+hm(new Date(b.time))+'</span> &nbsp;<span class="meta">'+(b.type==='bath'?'🚿 洗澡':(b.type==='hair'?'💆 洗头':'🧴 擦油/擦粉'))+'</span>'+recTag(b.recorder),'今天还没有洗澡记录');
+  document.getElementById('bathList').innerHTML=listHtml(bathsToday.slice().reverse().slice(0,12),
+    b=>'<span class="time">'+hm(new Date(b.time))+'</span> &nbsp;<span class="meta">'+(BATH_LABEL[b.type]||'🧴 护理')+'</span>'+recTag(b.recorder),'今天还没有洗澡 / 护理记录');
+  const bmEl=document.getElementById('bathMust');
+  if(bmEl){
+    const bm=(lab,ok,txt)=>'<div class="bm'+(ok?' ok':'')+'">'+lab+'<span class="s">'+txt+'</span></div>';
+    bmEl.innerHTML=
+      bm('🧼 早起洗脸', nFace, nFace?'已完成 ✓':'待做')+
+      bm('🍑 温擦屁屁', nWipe, nWipe?'已完成 ✓':'待做')+
+      bm('🧴 早起擦油', nOil,  nOil?'已完成 ✓':'待做')+
+      bm('🌸 擦粉',     nPowder, nPowder?(nPowder+' 次'):'0 次');
+  }
 
   /* 睡眠（以分钟为核心） */
   const sleeps=S.sleeps.filter(s=>sleepOnDay(s,today));
