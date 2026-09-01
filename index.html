@@ -510,9 +510,9 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
       </div>
       <div id="bathMust" class="bath-must"></div>
       <div class="row" style="margin-top:10px">
-        <button class="btn btn-ignore big-btn" id="bathIgnoreBtn" onclick="toggleBathIgnore()">⏭️ 今天不洗澡（忽略）</button>
+        <button class="btn btn-ignore big-btn" id="bathIgnoreBtn" onclick="toggleBathIgnore()">⏭️ 今天不洗（洗头+洗澡）</button>
       </div>
-      <p class="mini-stat" style="margin-top:10px">⏰ 洗澡提醒：<b>晚上 8:00</b> · 打疫苗当天自动跳过；点「忽略」当天不再提醒<b>洗澡</b>。<br>🧼 早起洗脸、🍑 温水擦屁屁 属每日必做，<b>不能忽略</b>；🌸 擦粉按次数记，红屁屁 / 潮湿时随时 ＋1。</p>
+      <p class="mini-stat" style="margin-top:10px">⏰ 洗澡提醒：<b>晚上 8:00</b> · 打疫苗当天自动跳过；点「忽略」当天不再提醒<b>洗头和洗澡</b>（只洗头、只洗澡都会停止提醒）。<br>🧼 早起洗脸、🍑 温水擦屁屁 属每日必做，<b>不能忽略</b>；🌸 擦粉按次数记，红屁屁 / 潮湿时随时 ＋1。</p>
       <div class="list">
         <div class="list-title">今日记录 <span class="del-all" onclick="clearToday('bath')">清空今日</span></div>
         <div id="bathList"></div>
@@ -1077,12 +1077,13 @@ function checkReminders(){
   const vaxToday = S.vaccines.some(v=>v.doses.some(d=>d.date===today));
   const bathIgnored = !!(S.bathIgnores&&S.bathIgnores[today]);
   if(!vaxToday && !bathIgnored){
-    const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
-    if(!bathsToday.length && !wasFired('bath')){
+    // 「今天不洗」= 忽略洗头 + 洗澡；只要洗头或洗澡记录过任意一项，就不再提醒
+    const bt2=t=>S.baths.filter(b=>dstr(new Date(b.time))===today && b.type===t).length;
+    if(!bt2('bath') && !bt2('hair') && !wasFired('bath')){
       const left=minutesUntil(REMIND_TIMES.bath);
       if(left<=5 && left>=-120){
         markFired('bath');
-        fireAlert('🛁 该给多米洗澡啦', '晚上 8:00 · 洗完记得记录');
+        fireAlert('🛁 该给多米洗澡/洗头啦', '晚上 8:00 · 洗完记得记录');
       }
     }
   }
@@ -1165,7 +1166,7 @@ function renderOverview(){
   if(vaxToday){
     html+=ovCard('🛁','洗澡（疫苗日跳过）','--','skip','record|card-bath');
   }else if(bathIgnored){
-    html+=ovCard('🛁','洗澡（已忽略）','晨护 '+mustDone+'/3','ig','record|card-bath');
+    html+=ovCard('🛁','洗澡/洗头（已忽略）','晨护 '+mustDone+'/3','ig','record|card-bath');
   }else{
     const bOverdue=!nBath&&minutesUntil('20:00')<0;
     html+=ovCard('🛁','洗澡 · 晨护', (nBath?'洗过了 ✅':'20:00 待洗')+' · 晨护 '+mustDone+'/3',
@@ -1539,11 +1540,12 @@ function addPotty(type){
 const ACT_GROUPS=[
   {title:'📖 早教练习', color:'blue', items:[
     {t:'music', n:'听儿歌/故事', e:'🎵'},
-    {t:'cards', n:'红黑视觉卡', e:'🔴⚫'},
+    {t:'focus', n:'专注训练', e:'🎯'},
+    {t:'cards', n:'追视练习', e:'🔴⚫'},
   ]},
   {title:'🤸 大运动练习', color:'green', items:[
     {t:'grasp', n:'抓握练习', e:'✊'},
-    {t:'turnover', n:'翻身练习', e:'🔄'},
+    {t:'turnover', n:'翻身训练', e:'🔄'},
     {t:'headup', n:'抬头训练', e:'🦒', dur:true},
     {t:'situp', n:'拉坐练习', e:'🙆'},
     {t:'crossleg', n:'交叉抬腿', e:'🦵'},
@@ -1633,32 +1635,32 @@ function renderActs(){
 */
 const ROUTINE=[
   {t:'早起', time:'6:30-7:30', ic:'🌅', items:[
-    {n:'换尿布（小便）', e:'🧷', link:'diaper'},
+    {n:'换尿布（小便）', e:'🧷', pool:'diaper'},
     {n:'温水擦屁屁',     e:'🍑', link:'wipe',   must:true},
     {n:'洗脸',           e:'🧼', link:'face',   must:true},
     {n:'早起擦油',       e:'🧴', link:'oil'},
     {n:'大便',           e:'💩', link:'poop'},
-    {n:'换尿布（大便）', e:'🧷', link:'diaper'},
+    {n:'换尿布（大便）', e:'🧷', pool:'diaper'},
   ]},
   {t:'上午活动', time:'8:00-9:00', ic:'☀️', items:[
-    {n:'连续翻身',       e:'🔄', link:'act:turnover', tip:'翻身练习'},
-    {n:'看玩具稳定情绪', e:'🎵', link:'act:music',    tip:'听儿歌'},
+    {n:'翻身训练',       e:'🔄', link:'act:turnover'},
+    {n:'看玩具稳定情绪', e:'🎯', link:'act:focus', tip:'专注训练'},
     {n:'喝奶',           e:'🍼', link:'feed'},
   ]},
   {t:'上午（睡醒后）', time:'9:15-10:15', ic:'🌤️', items:[
     {n:'哄睡',         e:'😴', link:'sleep'},
-    {n:'换尿布（小便）', e:'🧷', link:'diaper'},
+    {n:'换尿布（小便）', e:'🧷', pool:'diaper'},
     {n:'喂 AD/D3',     e:'💊', link:'vitamin'},
-    {n:'阳台晒太阳',   e:'🌞', link:'walk:am', tip:'上午遛弯'},
+    {n:'阳台晒太阳/遛弯', e:'🌞', link:'walk:am', tip:'上午遛弯'},
     {n:'抓握练习',     e:'✊', link:'act:grasp'},
     {n:'陪玩',         e:'🧸'},
   ]},
   {t:'中午（睡醒后）', time:'11:30-12:30', ic:'🍚', items:[
     {n:'哄睡',         e:'😴', link:'sleep'},
-    {n:'换尿布（小便）', e:'🧷', link:'diaper'},
+    {n:'换尿布（小便）', e:'🧷', pool:'diaper'},
     {n:'抬头训练',     e:'🦒', link:'act:headup', need:3, tip:'累计满 3 分钟算一次'},
     {n:'啃牙胶',       e:'🦷'},
-    {n:'换尿布（大便）', e:'🧷', link:'diaper'},
+    {n:'换尿布（大便）', e:'🧷', pool:'diaper'},
     {n:'拉坐练习',     e:'🙆', link:'act:situp'},
     {n:'追视练习',     e:'🔴⚫', link:'act:cards', tip:'红黑视觉卡'},
   ]},
@@ -1668,7 +1670,7 @@ const ROUTINE=[
   ]},
   {t:'下午（睡醒后）', time:'14:30-15:30', ic:'🛝', items:[
     {n:'哄睡',     e:'😴', link:'sleep'},
-    {n:'换尿布',   e:'🧷', link:'diaper'},
+    {n:'换尿布',   e:'🧷', pool:'diaper'},
     {n:'飞机抱',   e:'✈️', link:'act:plane'},
     {n:'遛弯',     e:'🌳', link:'walk:pm'},
     {n:'抬头训练', e:'🦒', link:'act:headup', need:3, tip:'累计满 3 分钟算一次'},
@@ -1743,7 +1745,9 @@ function routineEval(day){
       }else if(it.link){
         sub = it.need ? ('需累计 '+needN+' 分 · 现 '+have+' 分') : ('需累计 '+needN+' 次 · 现 '+have);
       }else{
-        sub = '👆 点一下手动记';
+        // 手动项：只提示当日换尿布次数，不自动打勾
+        const pn = it.pool ? (pools[it.pool]||0) : 0;
+        sub = '👆 点一下手动记' + (pn ? (' · 今日已换 '+pn+' 次') : '');
       }
       return {id, n:it.n, e:it.e, tip:it.tip, must:!!it.must, link:it.link||'',
               done:isDone, auto, manual:(mv!==undefined), have, need:needN, sub};
@@ -1886,7 +1890,7 @@ function setWalk(slot,status){
 function toggleBathIgnore(){
   const today=todayStr();
   if(S.bathIgnores[today]){ delete S.bathIgnores[today]; toast('已取消忽略，今晚 8:00 会正常提醒'); }
-  else{ S.bathIgnores[today]={time:new Date().toISOString(), rec:S.currentUser}; toast('已忽略，今天不再提醒洗澡'); }
+  else{ S.bathIgnores[today]={time:new Date().toISOString(), rec:S.currentUser}; toast('已忽略，今天不再提醒洗头和洗澡'); }
   save(); renderAll();
 }
 const BATH_LABEL={bath:'🚿 洗澡', hair:'💆 洗头', face:'🧼 早起洗脸', wipe:'🍑 温水擦屁屁', oil:'🧴 早起擦油', powder:'🌸 擦粉'};
@@ -2391,16 +2395,17 @@ function renderAll(){
   const bathsToday=S.baths.filter(b=>dstr(new Date(b.time))===today);
   const bathIgnored=!!(S.bathIgnores&&S.bathIgnores[today]);
   const bt=t=>bathsToday.filter(b=>b.type===t).length;
-  const nBath=bt('bath'), nFace=bt('face'), nWipe=bt('wipe'), nOil=bt('oil'), nPowder=bt('powder');
+  const nBath=bt('bath'), nHair=bt('hair'), nFace=bt('face'), nWipe=bt('wipe'), nOil=bt('oil'), nPowder=bt('powder');
   const mustDone=(nFace?1:0)+(nWipe?1:0)+(nOil?1:0);
+  const bathShow = nBath?'洗澡 ✓':(nHair?'已洗头':(bathIgnored?'已忽略':'待洗'));
   document.getElementById('bathSt').textContent=
-    vaxToday?'疫苗日跳过':('晨护 '+mustDone+'/3 · 洗澡'+(nBath?' ✓':(bathIgnored?' 已忽略':' 待洗')));
+    vaxToday?'疫苗日跳过':('晨护 '+mustDone+'/3 · '+bathShow);
   const bvt=document.getElementById('bathVaxTip');
   if(vaxToday){bvt.style.display='block';bvt.innerHTML='💉 今天接种了疫苗，<b>洗澡提醒已自动跳过</b>（接种后当天建议不洗澡，注意观察宝宝状态）。'}
   else bvt.style.display='none';
   const bib=document.getElementById('bathIgnoreBtn');
   if(bathIgnored){bib.textContent='✅ 今天已忽略（点一下取消）';bib.className='btn btn-ignore big-btn';}
-  else{bib.textContent='⏭️ 今天不洗（忽略）';bib.className='btn btn-ignore big-btn';}
+  else{bib.textContent='⏭️ 今天不洗（洗头+洗澡）';bib.className='btn btn-ignore big-btn';}
   document.getElementById('bathList').innerHTML=listHtml(bathsToday.slice().reverse().slice(0,12),
     b=>'<span class="time">'+hm(new Date(b.time))+'</span> &nbsp;<span class="meta">'+(BATH_LABEL[b.type]||'🧴 护理')+'</span>'+recTag(b.recorder),'今天还没有洗澡 / 护理记录');
   const bmEl=document.getElementById('bathMust');
