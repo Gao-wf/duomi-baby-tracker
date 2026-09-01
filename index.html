@@ -247,6 +247,15 @@ footer{text-align:center;font-size:12px;color:#C4B4AA;padding:18px 0 8px;line-he
 .growth-chart .legend b.w{color:var(--green)} .growth-chart .legend b.h{color:var(--blue)}
 .growth-chart svg{width:100%;height:auto;display:block}
 
+/* ===== 趋势曲线（喂养/睡眠 近N天滚动窗口） ===== */
+.trend-chart{background:#FFFDFB;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
+.trend-chart .legend{font-size:11px;color:var(--muted);margin-bottom:8px;text-align:center;font-weight:700}
+.trend-chart svg{width:100%;height:auto;display:block}
+.trend-chart .trend-sum{text-align:center;font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.trend-range{display:flex;gap:6px;justify-content:center;margin-bottom:6px}
+.trend-range .rchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:3px 13px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);user-select:none}
+.trend-range .rchip.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+
 @media (max-width:560px){
   .ov-grid{grid-template-columns:repeat(3,1fr)}
   .vac-row{grid-template-columns:80px 1fr 112px 30px}
@@ -336,6 +345,16 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
           <div class="stat-cell"><div class="sv" id="wkFeedAvg">--</div><div class="sl">日均奶量（参考）</div></div>
         </div>
         <table class="stat-table" id="wkFeedTable"></table>
+      </div>
+      <div class="trend-chart">
+        <div class="legend">📈 每日总奶量趋势（曲线只显示所选天数，历史数据一条不删）</div>
+        <div class="trend-range" id="feedTrendRange">
+          <span class="rchip" data-n="7" onclick="setTrendRange('feed',7)">7天</span>
+          <span class="rchip on" data-n="14" onclick="setTrendRange('feed',14)">14天</span>
+          <span class="rchip" data-n="30" onclick="setTrendRange('feed',30)">30天</span>
+        </div>
+        <div id="feedTrend"></div>
+        <div class="trend-sum" id="feedTrendSum"></div>
       </div>
     </div>
   </div>
@@ -477,6 +496,16 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
           <div class="stat-cell"><div class="sv" id="wkSleepAvg">--</div><div class="sl">日均睡眠</div></div>
         </div>
         <table class="stat-table" id="wkSleepTable"></table>
+      </div>
+      <div class="trend-chart">
+        <div class="legend">📈 每日睡眠总时长趋势（曲线只显示所选天数，历史数据一条不删）</div>
+        <div class="trend-range" id="sleepTrendRange">
+          <span class="rchip" data-n="7" onclick="setTrendRange('sleep',7)">7天</span>
+          <span class="rchip on" data-n="14" onclick="setTrendRange('sleep',14)">14天</span>
+          <span class="rchip" data-n="30" onclick="setTrendRange('sleep',30)">30天</span>
+        </div>
+        <div id="sleepTrend"></div>
+        <div class="trend-sum" id="sleepTrendSum"></div>
       </div>
       <div class="collapse">
         <div class="coll-head" onclick="toggleCollapse(this)">📁 睡眠历史（备份保留） <span class="arrow">▼</span></div>
@@ -1190,6 +1219,118 @@ function feedWeekStats(){
     rows.map(x=>'<tr><td>'+(x.ds===today?'今天':x.ds.slice(5))+'</td><td>'+x.count+'</td><td>'+(x.amt?x.amt+'ml':'--')+'</td><td>'+(x.avg?x.avg+'ml':'--')+'</td></tr>').join('');
 }
 
+/* ================= 趋势曲线（近N天滚动窗口，只影响显示、不删任何数据） ================= */
+var TREND_RANGE={feed:14,sleep:14};
+function setTrendRange(kind,n){
+  TREND_RANGE[kind]=n;
+  var box=document.getElementById(kind+'TrendRange');
+  if(box){
+    var cs=box.querySelectorAll('.rchip');
+    for(var i=0;i<cs.length;i++){
+      if(+cs[i].getAttribute('data-n')===n) cs[i].classList.add('on'); else cs[i].classList.remove('on');
+    }
+  }
+  if(kind==='feed') renderFeedTrend(); else renderSleepTrend();
+}
+/* 最近 n 天的日期数组（含今天），滚动窗口：第 n+1 天到来时最左端自动滑出 */
+function lastNDays(n){
+  var arr=[];
+  for(var i=n-1;i>=0;i--){var d=new Date(); d.setDate(d.getDate()-i); arr.push(dstr(d));}
+  return arr;
+}
+/* Y轴上限取整到"能被3等分"的刻度，保证网格标签是整数 */
+function niceMax(v){
+  if(!(v>0)) return 10;
+  var p=Math.pow(10,Math.floor(Math.log10(v)));
+  var r=v/p;
+  var SC=[1.2,1.5,1.8,2.4,3,4.5,6,9,12];
+  var m=12;
+  for(var i=0;i<SC.length;i++){ if(r<=SC[i]+1e-9){ m=SC[i]; break; } }
+  return +(m*p).toFixed(6);
+}
+/* 通用 SVG 折线图：data=[{ds:'2026-09-01',v:830,has:true}]，opt={color,fmt} */
+function drawDailyLine(elId,data,opt){
+  var el=document.getElementById(elId); if(!el) return;
+  var has=data.filter(function(d){return d.has});
+  if(!has.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:12px;padding:16px 0">这段时间还没有记录，记一笔后自动生成曲线</div>';
+    return;
+  }
+  var W=640,H=170,P={l:44,r:14,t:14,b:28};
+  var vals=has.map(function(d){return d.v});
+  var vMax=niceMax(Math.max.apply(null,vals)*1.15), vMin=0;
+  var iw=W-P.l-P.r, ih=H-P.t-P.b;
+  var X=function(i){return P.l+(data.length>1?iw*i/(data.length-1):iw/2)};
+  var Y=function(v){return P.t+ih*(1-(v-vMin)/(vMax-vMin))};
+  var grid='',glab='';
+  for(var g=0;g<=3;g++){
+    var y=(P.t+ih*g/3).toFixed(1), val=vMax*(1-g/3);
+    grid+='<line x1="'+P.l+'" y1="'+y+'" x2="'+(W-P.r)+'" y2="'+y+'" stroke="#F3E4D9" stroke-width="1"/>';
+    glab+='<text x="'+(P.l-6)+'" y="'+(+y+3).toFixed(1)+'" font-size="9" fill="#A08E84" text-anchor="end">'+opt.fmt(val)+'</text>';
+  }
+  /* 折线只连接"有记录"的相邻点，中间空缺的日子断开、不砸到 0 */
+  var segs=[],cur=[];
+  data.forEach(function(d,i){
+    if(d.has){ cur.push(X(i).toFixed(1)+','+Y(d.v).toFixed(1)); }
+    else if(cur.length){ segs.push(cur); cur=[]; }
+  });
+  if(cur.length) segs.push(cur);
+  var lines='';
+  segs.forEach(function(s){
+    if(s.length>1){
+      lines+='<polyline points="'+s.join(' ')+'" fill="none" stroke="'+opt.color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+    }else{
+      var xy=s[0].split(',');
+      lines+='<circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="3.2" fill="'+opt.color+'"/>';
+    }
+  });
+  var dots='',xlab='';
+  var step=data.length<=10?1:(data.length<=16?2:4);
+  data.forEach(function(d,i){
+    var x=X(i).toFixed(1);
+    if(d.has){
+      dots+='<circle cx="'+x+'" cy="'+Y(d.v).toFixed(1)+'" r="3.2" fill="'+opt.color+'"/>';
+    }else{
+      dots+='<circle cx="'+x+'" cy="'+(P.t+ih).toFixed(1)+'" r="2.4" fill="none" stroke="#DCCFBF" stroke-width="1.4"/>';
+    }
+    if(i%step===0||i===data.length-1){
+      xlab+='<text x="'+x+'" y="'+(H-9)+'" font-size="9" fill="#A08E84" text-anchor="middle">'+d.ds.slice(5)+'</text>';
+    }
+  });
+  el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+grid+glab+lines+dots+xlab+'</svg>';
+}
+function renderFeedTrend(){
+  var n=TREND_RANGE.feed||14;
+  var data=lastNDays(n).map(function(ds){
+    var fs=feedOfDay(ds);
+    return {ds:ds, v:fs.reduce(function(a,f){return a+(+f.amount||0)},0), has:fs.length>0};
+  });
+  drawDailyLine('feedTrend',data,{color:cssVar('--primary')||'#F07B4F', fmt:function(v){return Math.round(v)+''}});
+  var box=document.getElementById('feedTrendSum');
+  if(box){
+    var hs=data.filter(function(d){return d.has});
+    if(!hs.length){box.textContent='';return}
+    var sum=0,mx=0; hs.forEach(function(d){sum+=d.v; if(d.v>mx)mx=d.v;});
+    box.innerHTML='近'+n+'天：有记录 '+hs.length+' 天 · 日均 <b>'+Math.round(sum/hs.length)+' ml</b> · 单日最高 '+mx+' ml';
+  }
+}
+function renderSleepTrend(){
+  var n=TREND_RANGE.sleep||14;
+  var data=lastNDays(n).map(function(ds){
+    var ss=S.sleeps.filter(function(s){return sleepOnDay(s,ds)});
+    var m=0; ss.forEach(function(s){m+=sleepMins(s)});
+    return {ds:ds, v:+(m/60).toFixed(2), has:ss.length>0};
+  });
+  drawDailyLine('sleepTrend',data,{color:cssVar('--blue')||'#5BA8D9', fmt:function(v){return v<10?(Math.round(v*10)/10).toFixed(1):Math.round(v)+''}});
+  var box=document.getElementById('sleepTrendSum');
+  if(box){
+    var hs=data.filter(function(d){return d.has});
+    if(!hs.length){box.textContent='';return}
+    var sum=0,mx=0; hs.forEach(function(d){sum+=d.v; if(d.v>mx)mx=d.v;});
+    box.innerHTML='近'+n+'天：有记录 '+hs.length+' 天 · 日均 <b>'+(sum/hs.length).toFixed(1)+' 小时</b> · 单日最高 '+mx.toFixed(1)+' 小时';
+  }
+}
+
 /* ================= 通用记录列表 ================= */
 function listHtml(items, fmt, emptyTxt){
   if(!items.length) return '<div class="empty">'+emptyTxt+'</div>';
@@ -1860,6 +2001,7 @@ function renderAll(){
   document.getElementById('feedList').innerHTML=feedHtml;
   renderFeedHist();
   feedWeekStats();
+  renderFeedTrend();
 
   /* 大小便 */
   const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today);
@@ -1951,6 +2093,7 @@ function renderAll(){
       return '<span class="time">'+durStr(mins*60000)+'</span> <span class="meta">'+sub+'</span>'+recTag(s.recorder)+'<span class="edit-btn" onclick="editSleep(\''+s.id+'\')">✎ 改</span>';
     },'今天还没有睡眠记录');
   sleepWeekStats();
+  renderSleepTrend();
   renderSleepHist();
 
   /* 身高体重 */
