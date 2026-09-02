@@ -242,6 +242,8 @@ footer{text-align:center;font-size:12px;color:#C4B4AA;padding:18px 0 8px;line-he
 .birth-chip{flex:1;background:var(--primary-soft);border-radius:10px;padding:10px;text-align:center}
 .birth-chip .bv{font-size:16px;font-weight:800;color:var(--primary)}
 .birth-chip .bl{font-size:11px;color:var(--muted)}
+.birth-link{color:var(--muted);text-decoration:underline;cursor:pointer;font-size:11px}
+.birth-link:active{color:var(--primary)}
 .growth-chart{background:#FFFDFB;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
 .growth-chart .legend{font-size:11px;color:var(--muted);margin-bottom:4px;text-align:center}
 .growth-chart .legend b.w{color:var(--green)} .growth-chart .legend b.h{color:var(--blue)}
@@ -406,9 +408,9 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
       <div class="row">
         <button class="btn btn-yellow big-btn" onclick="addPotty('pee')">💦 小便 +1</button>
         <button class="btn btn-green big-btn" onclick="addPotty('poop')">💩 大便 +1</button>
-        <button class="btn btn-blue big-btn" onclick="addPotty('diaper')">🧷 换尿布 +1</button>
       </div>
-      <p class="mini-stat" style="margin-top:8px">三项都按<b>次数</b>累计：换一次点一次，不用区分先后。</p>
+      <p class="mini-stat" style="margin-top:8px">小便、大便按<b>次数</b>累计；<b>换尿布不用单独点</b>，系统按「小便 + 大便」自动统计。</p>
+      <div class="mini-stat" id="pottySum" style="margin-top:6px"></div>
       <div class="list">
         <div class="list-title">今日记录 <span class="del-all" onclick="clearToday('potty')">清空今日</span></div>
         <div id="pottyList"></div>
@@ -610,10 +612,12 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
     </div>
     <div class="card-body">
       <div class="birth-chips">
-        <div class="birth-chip"><div class="bv" id="birthW">4.22 kg</div><div class="bl">出生体重</div></div>
-        <div class="birth-chip"><div class="bv" id="birthH">51.5 cm</div><div class="bl">出生身高</div></div>
-        <div style="display:flex;align-items:center"><button class="btn btn-outline btn-sm" onclick="editBirthSize()">✏️</button></div>
+        <div class="birth-chip"><div class="bv" id="lastGW">--</div><div class="bl" id="lastGWL">上次体重</div></div>
+        <div class="birth-chip"><div class="bv" id="lastGH">--</div><div class="bl" id="lastGHL">上次身高</div></div>
+        <div class="birth-chip"><div class="bv" id="lastGD" style="font-size:14px">--</div><div class="bl">记录日期</div></div>
+        <div style="display:flex;align-items:center"><button class="btn btn-outline btn-sm" onclick="editLastGrowth()" title="修改最近一次记录">✏️</button></div>
       </div>
+      <p class="mini-stat" style="margin:-2px 0 10px"><span class="birth-link" onclick="editBirthSize()">出生数据 ✏️</span></p>
       <div class="row">
         <div style="flex:1;min-width:110px">
           <span class="lbl">日期</span>
@@ -929,10 +933,18 @@ function load(){
   if(!S.bathIgnores) S.bathIgnores={};
   if(!S.routineManual) S.routineManual={};
   migrateVitamins();
+  migratePottyDiaper();
   migrateActivities();
   migrateBaths();
 }
 // 旧洗澡类型 'lotion'(擦油/粉) -> 'oil'(早起擦油)
+/* 换尿布改为「小便+大便」自动统计后，清掉旧的手工换尿布记录（否则会重复计数） */
+function migratePottyDiaper(){
+  if(!S.potty) S.potty=[];
+  const before=S.potty.length;
+  S.potty=S.potty.filter(p=>p.type!=='diaper');
+  if(S.potty.length!==before) save();
+}
 function migrateBaths(){
   if(!S.baths) S.baths=[];
   let changed=false;
@@ -1176,7 +1188,7 @@ function renderOverview(){
   // 大小便（含换尿布次数）
   const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today).length;
   const poop=S.potty.filter(p=>p.type==='poop'&&dstr(new Date(p.time))===today).length;
-  const dpr=S.potty.filter(p=>p.type==='diaper'&&dstr(new Date(p.time))===today).length;
+  const dpr=pee+poop;   // 换尿布 = 小便 + 大便
   html+=ovCard('🚽','大小便 · 换尿布', '小便 '+pee+' · 大便 '+poop+' · 尿布 '+dpr,'', 'record|card-potty');
 
   // 睡眠（以分钟为核心）
@@ -1702,7 +1714,8 @@ function routinePools(day){
     feed:   n(S.feedings, on),
     pee:    n(S.potty, r=>on(r)&&r.type==='pee'),
     poop:   n(S.potty, r=>on(r)&&r.type==='poop'),
-    diaper: n(S.potty, r=>on(r)&&r.type==='diaper'),
+    // 换尿布不再单独记录：次数 = 当日小便 + 大便
+    diaper: n(S.potty, r=>on(r)&&r.type==='pee') + n(S.potty, r=>on(r)&&r.type==='poop'),
     bath:   n(S.baths, r=>on(r)&&r.type==='bath'),
     face:   n(S.baths, r=>on(r)&&r.type==='face'),
     wipe:   n(S.baths, r=>on(r)&&r.type==='wipe'),
@@ -2018,6 +2031,12 @@ function editBirthSize(){
   save(); renderAll();
   toast('✅ 出生档案已更新');
 }
+/* 修改最近一次身高体重记录 */
+function editLastGrowth(){
+  const data=(S.growth||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  if(!data.length){ toast('还没有记录，先记录一次吧～'); return; }
+  editGrowth(data[data.length-1].date);
+}
 function daysFromBirth(dateStr){
   const birth=toDT(S.baby.birth); if(!birth) return 0;
   const d=new Date(dateStr+'T00:00');
@@ -2026,9 +2045,15 @@ function daysFromBirth(dateStr){
 function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 function renderGrowth(){
   const data=(S.growth||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
-  document.getElementById('birthW').textContent=(S.baby.birthWeight||4.22)+' kg';
-  document.getElementById('birthH').textContent=(S.baby.birthHeight||51.5)+' cm';
-  document.getElementById('growthSt').textContent=data.length?('已记录 '+data.length+' 次'):'--';
+  // 顶部展示「最近一次记录」的数据与日期（不再展示出生数据）
+  const _last=data.length?data[data.length-1]:null;
+  const _set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  _set('lastGW', _last?(_last.weight+' kg'):'--');
+  _set('lastGH', _last?(_last.height+' cm'):'--');
+  _set('lastGD', _last?(_last.date.slice(5)+(_last.date.slice(0,4)!==todayStr().slice(0,4)?('/'+_last.date.slice(2,4)):'')):'--');
+  _set('lastGWL', _last?('第 '+data.length+' 次记录'):'上次体重');
+  _set('lastGHL', _last?('出生后 '+daysFromBirth(_last.date)+' 天'):'上次身高');
+  document.getElementById('growthSt').textContent=_last?('上次 '+_last.date.slice(5)+' · 共 '+data.length+' 次'):'--';
   document.getElementById('growthList').innerHTML=data.length?data.slice().reverse().map(g=>{
     const age=daysFromBirth(g.date);
     return '<div class="li"><span><span class="time">'+g.date.slice(5)+'</span> <span class="meta">'+age+' 天 · '+g.weight+'kg · '+g.height+'cm</span>'+recTag(g.rec)+'<span class="edit-btn" onclick="editGrowth(\''+g.date+'\')">✎ 改</span></span></div>';
@@ -2325,9 +2350,11 @@ function renderAll(){
   /* 大小便 */
   const pee=S.potty.filter(p=>p.type==='pee'&&dstr(new Date(p.time))===today);
   const poop=S.potty.filter(p=>p.type==='poop'&&dstr(new Date(p.time))===today);
-  const diaper=S.potty.filter(p=>p.type==='diaper'&&dstr(new Date(p.time))===today);
-  document.getElementById('pottySt').textContent='尿'+pee.length+' 便'+poop.length+' 布'+diaper.length;
-  const pottyAll=pee.concat(poop,diaper).sort((a,b)=>b.time.localeCompare(a.time));
+  const dpr=pee.length+poop.length;   // 换尿布次数 = 小便 + 大便（不再单独记录）
+  document.getElementById('pottySt').textContent='尿'+pee.length+' 便'+poop.length+' 布'+dpr;
+  const ps=document.getElementById('pottySum');
+  if(ps) ps.innerHTML='今日 💦 小便 <b>'+pee.length+'</b> 次 &nbsp;·&nbsp; 💩 大便 <b>'+poop.length+'</b> 次 &nbsp;→&nbsp; 🧷 换尿布 <b>'+dpr+'</b> 次';
+  const pottyAll=pee.concat(poop).sort((a,b)=>b.time.localeCompare(a.time));
   document.getElementById('pottyList').innerHTML=listHtml(pottyAll.slice(0,8),
     p=>'<span class="time">'+hm(new Date(p.time))+'</span> &nbsp;<span class="meta">'+(POTTY_LABEL[p.type]||'记录')+'</span>'+recTag(p.recorder),'今天还没有记录');
 
