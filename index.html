@@ -106,6 +106,13 @@ input[type=number]{width:84px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .big-btn{flex:1;padding:14px;font-size:15px;border-radius:14px}
 .mini-stat{font-size:12px;color:var(--muted)}
+/* ☁️ 云同步 */
+.sync-state{background:var(--primary-soft);border-radius:10px;padding:9px 11px;font-size:13px;line-height:1.7;margin-bottom:10px}
+.sync-input{width:100%;padding:10px;font-size:13px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-family:ui-monospace,Menlo,Consolas,monospace}
+.st.ok{color:#2E9E63;font-weight:700}
+.sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2E9E63;margin-right:5px;vertical-align:middle}
+.sync-dot.off{background:#C9BDB4}
+.sync-log{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6;word-break:break-all}
 .amount-chips{display:flex;gap:8px}
 .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}
 .chip.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
@@ -681,6 +688,38 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
   </div><!-- /view-growth -->
   <div class="view" id="view-more">
   <div class="view-back" onclick="showTab('overview')">‹ 返回总览</div>
+  <div class="card" id="card-sync">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="ic">☁️</span><span class="tt">云同步 · 多台手机一起记</span><span class="st" id="syncSt">未开启</span><span class="arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="sync-state" id="syncState">当前：<b>未开启</b> · 数据只存在这部手机里</div>
+      <div id="syncSetup">
+        <p class="mini-stat" style="line-height:1.9;margin:8px 0 10px">
+          <b>①</b> 打开 <b>github.com/settings/tokens</b> → <b>Generate new token (classic)</b> → 只勾 <b>gist</b> 一项 → 生成，复制那串 <b>ghp_</b> 开头的令牌。<br>
+          <b>②</b> 把令牌粘到下面，点「开启云同步」。<br>
+          <b>③</b> 家人手机打开同一个网址，粘<b>同一个令牌</b>再点一次开启 —— 两台手机就通了。
+        </p>
+        <input type="text" id="syncToken" class="sync-input" placeholder="在这里粘贴 GitHub 令牌" autocomplete="off" spellcheck="false">
+        <div class="row" style="margin-top:8px">
+          <button class="btn btn-primary" onclick="syncConnect()">🚀 开启云同步</button>
+        </div>
+      </div>
+      <div id="syncOn" style="display:none">
+        <div class="row" style="margin-top:2px">
+          <button class="btn btn-outline btn-sm" onclick="syncNow(true)">🔄 立即同步</button>
+          <button class="btn btn-outline btn-sm" onclick="syncDisconnect()">⏏ 关闭</button>
+        </div>
+        <p class="mini-stat" style="margin-top:10px;line-height:1.9">
+          📌 记一笔后约 <b>2 秒</b>自动上传；切回页面、打开页面会自动拉取。<br>
+          📌 多台手机的数据是<b>合并</b>的：你记的 + 家人记的，谁都不会被覆盖。<br>
+          📌 家人的手机：打开同一网址，粘<b>同一个令牌</b>点一下开启即可加入。<br>
+          📌 万一没网，数据先存在本机，联网后自动补传。
+        </p>
+        <div class="sync-log" id="syncLog"></div>
+      </div>
+    </div>
+  </div>
   <div class="card" id="card-mref">
     <div class="card-head" onclick="toggleCard(this)">
       <span class="ic">📚</span><span class="tt" id="mrefTitle">成长参考</span><span class="st">对照看看</span><span class="arrow">▼</span>
@@ -723,7 +762,8 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
 
   <footer>
     多米 · <span id="footerAge">4</span> 月龄育儿小助手<br>
-    数据保存在本浏览器中，页面需保持打开提醒才会响
+    数据存在本浏览器 · 开「⚙️ 更多 → ☁️ 云同步」可与家人一起记<br>
+    页面需保持打开，提醒才会响
   </footer>
   </div><!-- /view-more -->
 
@@ -978,7 +1018,13 @@ function migrateActivities(){
     S.activities=[];
   }
 }
-function save(){localStorage.setItem(LS_KEY,JSON.stringify(S))}
+function save(){
+  try{ stampAll() }catch(e){}
+  try{ localStorage.setItem(LS_KEY,JSON.stringify(S)) }catch(e){}
+  if(typeof _noPush==='undefined'||!_noPush){
+    try{ syncTouch() }catch(e){}
+  }
+}
 
 /* ================= 月龄计算 ================= */
 // 满月数：按出生日期到今天的"满 X 个月"
@@ -1452,7 +1498,10 @@ function listHtml(items, fmt, emptyTxt){
 }
 function delById(id){
   ['feedings','potty','activities','baths','sleeps'].forEach(k=>{
+    if(!Array.isArray(S[k])) return;
+    const n=S[k].length;
     S[k]=S[k].filter(x=>x.id!==id);
+    if(S[k].length!==n) syncMarkDel(k,id);   // 记墓碑，删除会同步到其他手机
   });
   save(); renderAll();
 }
@@ -2210,7 +2259,9 @@ function editFood(id){
 }
 function delFood(id){
   if(!confirm('确定删除这条辅食记录？')) return;
+  const n=S.foods.length;
   S.foods=S.foods.filter(x=>x.id!==id);
+  if(S.foods.length!==n) syncMarkDel('foods',id);
   save(); renderAll();
 }
 
@@ -2483,6 +2534,293 @@ function renderAll(){
   save();
 }
 
+/* ================= ☁️ 云同步（GitHub 私密 Gist） =================
+   原理：全部数据打成一个 JSON，存在一个只有令牌能读写的「私密 Gist」里。
+   每台手机记完自动上传，打开/切回页面自动下载，按「每条记录的最后修改时间」合并，
+   所以多个人同时记，是拼接而不是互相覆盖。 */
+const SYNC_KEY='duomi_sync_v1';
+const GIST_DESC='duomi-baby-sync';
+const GIST_FN='duomi-baby-data.json';
+const GH_API='https://api.github.com';
+const ARR_KEYS=['feedings','potty','activities','baths','sleeps','growth','foods','actHistory'];
+const OBJ_KEYS=['actCounts','vitamins','probiotics','walks','bathIgnores','routineManual'];
+
+function syncCfg(){ try{return JSON.parse(localStorage.getItem(SYNC_KEY))||{}}catch(e){return {}} }
+function syncSaveCfg(c){ try{localStorage.setItem(SYNC_KEY,JSON.stringify(c))}catch(e){} }
+function syncReady(){ const c=syncCfg(); return !!(c.token&&c.gistId) }
+
+/* --- 指纹 / 稳定 id / 时间戳 --- */
+function _hash(s){ let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))|0 } return (h>>>0).toString(36) }
+function _sig(v){ return JSON.stringify(v===undefined?null:v) }
+function _eid(k,it){
+  if(!it||typeof it!=='object') return null;
+  if(it.id) return String(it.id);
+  if(k==='growth') return it.date?('g:'+it.date):null;
+  return null;
+}
+function _tOf(it){
+  if(it.time){ const t=Date.parse(it.time); if(!isNaN(t)) return t }
+  if(it.date){ const t=Date.parse(it.date+'T12:00:00'); if(!isNaN(t)) return t }
+  return 0;
+}
+
+/* --- 自动给每条记录打「最后修改时间」：内容一变，时间就更新 --- */
+function stampAll(){
+  try{
+    if(!S.__u) S.__u={};
+    const U=S.__u;
+    if(!U.a)U.a={}; if(!U.o)U.o={}; if(!U.s)U.s={}; if(!U.v)U.v={};
+    const now=Date.now();
+    ARR_KEYS.forEach(k=>{
+      const arr=S[k]; if(!Array.isArray(arr)) return;
+      if(!U.a[k]) U.a[k]={};
+      const M=U.a[k];
+      arr.forEach(it=>{
+        if(!it||typeof it!=='object') return;
+        let id=_eid(k,it);
+        if(!id){ id='x'+uid(); it.id=id }
+        const h=_hash(_sig(it));
+        const m=M[id];
+        // 首次见到：用记录本身的时间作为版本号（补录旧数据不会盖掉新数据）
+        // 但若记录时间在未来（手滑选错），则收敛为当前时间，保证之后的修改/删除能盖过它
+        if(!m) M[id]={u:Math.min(_tOf(it)||now, now), h:h, del:false};
+        else if(m.h!==h){ m.h=h; m.u=now; m.del=false }
+      });
+    });
+    OBJ_KEYS.forEach(k=>{
+      const o=S[k]; if(!o||typeof o!=='object') return;
+      if(!U.o[k]) U.o[k]={};
+      const M=U.o[k];
+      Object.keys(o).forEach(dk=>{
+        const v=o[dk];
+        if(v===null||v===undefined) return;
+        const h=_hash(_sig(v));
+        const m=M[dk];
+        if(!m) M[dk]={u:now,h:h};
+        else if(m.h!==h){ m.h=h; m.u=now }
+      });
+    });
+    ['baby','sleeping'].forEach(k=>{
+      const h=_hash(_sig(S[k]===undefined?null:S[k]));
+      if(!U.s[k]) U.s[k]={u:now,h:h};
+      else if(U.s[k].h!==h){ U.s[k].h=h; U.s[k].u=now }
+    });
+    (Array.isArray(S.vaccines)?S.vaccines:[]).forEach(v=>{
+      if(!v||!v.name) return;
+      const h=_hash(_sig(v));
+      if(!U.v[v.name]) U.v[v.name]={u:now,h:h};
+      else if(U.v[v.name].h!==h){ U.v[v.name].h=h; U.v[v.name].u=now }
+    });
+  }catch(e){ console.warn('stampAll',e) }
+}
+/* 软删除：留个墓碑，这样「删除」也能同步到别的手机 */
+function syncMarkDel(k,id){
+  try{
+    if(!S.__u) S.__u={}; if(!S.__u.a) S.__u.a={}; if(!S.__u.a[k]) S.__u.a[k]={};
+    const M=S.__u.a[k];
+    M[id]={u:Date.now(), h:(M[id]&&M[id].h)||'', del:true};
+  }catch(e){}
+}
+
+/* --- 合并远端数据：逐条比最后修改时间，新的赢 --- */
+function mergeRemote(R){
+  if(!R||typeof R!=='object') return 0;
+  if(!S.__u) S.__u={};
+  const U=S.__u; if(!U.a)U.a={}; if(!U.o)U.o={}; if(!U.s)U.s={}; if(!U.v)U.v={};
+  const RU=R.__u||{}, ra_=RU.a||{}, ro_=RU.o||{}, rs_=RU.s||{}, rv_=RU.v||{};
+  let ch=0;
+  ARR_KEYS.forEach(k=>{
+    const la=Array.isArray(S[k])?S[k]:[];
+    const ra=Array.isArray(R[k])?R[k]:[];
+    const lm=U.a[k]||{}, rm=ra_[k]||{};
+    const lmap={},rmap={},ids={};
+    la.forEach(it=>{const id=_eid(k,it); if(id){lmap[id]=it; ids[id]=1}});
+    ra.forEach(it=>{const id=_eid(k,it); if(id){rmap[id]=it; ids[id]=1}});
+    Object.keys(lm).forEach(i=>ids[i]=1); Object.keys(rm).forEach(i=>ids[i]=1);
+    const out=[], nm={};
+    Object.keys(ids).forEach(id=>{
+      const L=lm[id], Rr=rm[id];
+      const lu=L?(L.u||0):0, ru=Rr?(Rr.u||0):0;
+      const meta=(ru>lu)?Rr:L;
+      const item=(ru>lu)?rmap[id]:lmap[id];
+      if(meta) nm[id]={u:meta.u||0, h:meta.h||'', del:!!meta.del};
+      if(item && !(meta&&meta.del)) out.push(item);
+      if(ru>lu) ch++;
+    });
+    S[k]=out; U.a[k]=nm;
+    const cut=Date.now()-120*864e5;   // 4 个月前的墓碑清掉，避免无限膨胀
+    Object.keys(nm).forEach(id=>{ const m=nm[id]; if(m.del&&m.u<cut&&!lmap[id]&&!rmap[id]) delete nm[id] });
+  });
+  OBJ_KEYS.forEach(k=>{
+    const lo=(S[k]&&typeof S[k]==='object')?S[k]:{};
+    const ro=(R[k]&&typeof R[k]==='object')?R[k]:{};
+    const lm=U.o[k]||{}, rm=ro_[k]||{};
+    const keys={}; Object.keys(lo).forEach(i=>keys[i]=1); Object.keys(ro).forEach(i=>keys[i]=1);
+    const mo={}, nm={};
+    Object.keys(keys).forEach(dk=>{
+      const L=lm[dk], Rr=rm[dk];
+      const lu=L?(L.u||0):0, ru=Rr?(Rr.u||0):0;
+      const v=(ru>lu)?ro[dk]:lo[dk];
+      if(v!==undefined&&v!==null){ mo[dk]=v; nm[dk]=(ru>lu)?{u:ru,h:(Rr&&Rr.h)||''}:{u:L?lu:Date.now(),h:(L&&L.h)||''} }
+      if(ru>lu) ch++;
+    });
+    S[k]=mo; U.o[k]=nm;
+  });
+  ['baby','sleeping'].forEach(k=>{
+    const L=U.s[k]||{u:0}, Rr=rs_[k]||{u:0};
+    if(((Rr.u||0)>(L.u||0)) && R[k]!==undefined){ S[k]=R[k]; U.s[k]={u:Rr.u||0,h:Rr.h||''}; ch++ }
+  });
+  if(Array.isArray(R.vaccines)){
+    let merged=Array.isArray(S.vaccines)?S.vaccines.slice():[];
+    R.vaccines.forEach(rv=>{
+      if(!rv||!rv.name) return;
+      const L=U.v[rv.name]||{u:0}, Rr=rv_[rv.name]||{u:0};
+      if((Rr.u||0)>(L.u||0)){
+        const i=merged.findIndex(x=>x.name===rv.name);
+        if(i>=0) merged[i]=rv; else merged.push(rv);
+        U.v[rv.name]={u:Rr.u||0,h:Rr.h||''};
+        ch++;
+      }
+    });
+    S.vaccines=merged;
+  }
+  return ch;
+}
+
+/* --- 打包 / 网络 --- */
+function syncPayload(){
+  const d={__v:2,__t:Date.now()};
+  ARR_KEYS.forEach(k=>d[k]=S[k]||[]);
+  OBJ_KEYS.forEach(k=>d[k]=S[k]||{});
+  d.baby=S.baby||null; d.sleeping=(S.sleeping===undefined?null:S.sleeping); d.vaccines=S.vaccines||[];
+  d.__u=S.__u||{};
+  return d;
+}
+function objFiles(){ return {[GIST_FN]:{content:JSON.stringify(syncPayload())}} }
+function ghHeaders(){
+  const c=syncCfg();
+  return {'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+}
+async function ghFetch(url,opt){
+  const r=await fetch(url,opt);
+  if(r.status===401||r.status===403) throw new Error('令牌无效或权限不足（需要勾选 gist）');
+  if(!r.ok) throw new Error('GitHub 返回 '+r.status);
+  return r.json();
+}
+function syncLog(msg){
+  const el=document.getElementById('syncLog');
+  if(el){ const t=new Date(); el.textContent='['+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0')+'] '+msg }
+}
+
+/* --- 开启 / 关闭 --- */
+async function syncConnect(){
+  const inp=document.getElementById('syncToken');
+  const t=(inp&&inp.value||'').trim();
+  if(!t){ alert('请先把 GitHub 令牌粘贴到输入框里'); return }
+  if(!/^(ghp_|github_pat_)/.test(t)){ alert('令牌格式不对，应该是 ghp_ 或 github_pat_ 开头'); return }
+  const btn=document.querySelector('#syncSetup .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='连接中…' }
+  syncLog('正在连接 GitHub…');
+  try{
+    const c=syncCfg(); c.token=t; syncSaveCfg(c);
+    let id=c.gistId;
+    if(!id){
+      const list=await ghFetch(GH_API+'/gists?per_page=100',{headers:ghHeaders()});
+      const hit=(Array.isArray(list)?list:[]).find(g=>g.description===GIST_DESC);
+      if(hit) id=hit.id;
+    }
+    if(!id){
+      stampAll();
+      const g=await ghFetch(GH_API+'/gists',{method:'POST',headers:ghHeaders(),
+        body:JSON.stringify({description:GIST_DESC,public:false,files:objFiles()})});
+      c.gistId=g.id; c.createdAt=Date.now(); c.lastSync=Date.now(); syncSaveCfg(c);
+      renderSyncUI(); syncLog('云端空间已创建，本机数据已上传');
+      toast('☁️ 云同步已开启\n本机数据已上传');
+      return;
+    }
+    c.gistId=id; syncSaveCfg(c);
+    renderSyncUI();
+    await syncNow(true);
+  }catch(e){
+    syncLog('连接失败：'+e.message);
+    alert('连接失败：'+e.message+'\n\n请检查：\n1. 生成令牌时是否勾选了 gist\n2. 这台设备能否打开 github.com');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='🚀 开启云同步' }
+  }
+}
+function syncDisconnect(){
+  if(!confirm('关闭后这台手机不再自动同步（本机数据保留，云端数据不会删除）。确定关闭？')) return;
+  const c=syncCfg(); delete c.token; delete c.gistId; syncSaveCfg(c);
+  renderSyncUI(); toast('已关闭云同步');
+}
+
+/* --- 同步主流程：先拉合并，再推 --- */
+var _syncing=false, _syncTimer=null, _noPush=false;
+async function syncNow(manual){
+  if(!syncReady()){ if(manual) alert('还没开启云同步'); return }
+  if(_syncing){ if(manual) toast('正在同步中…'); return }
+  _syncing=true; renderSyncUI();
+  try{
+    const c=syncCfg();
+    syncLog('正在拉取云端数据…');
+    const g=await ghFetch(GH_API+'/gists/'+c.gistId,{headers:ghHeaders()});
+    const f=g.files&&g.files[GIST_FN];
+    if(f&&f.content){
+      let R=null; try{ R=JSON.parse(f.content) }catch(e){ R=null }
+      if(R){
+        stampAll();
+        const n=mergeRemote(R);
+        if(n>0){
+          try{ migrateVitamins(); migratePottyDiaper(); migrateActivities(); migrateBaths() }catch(e){}
+          _noPush=true; save(); _noPush=false;
+          renderAll();
+          syncLog('合并了云端 '+n+' 处更新');
+        }else syncLog('云端没有新内容');
+      }
+    }
+    stampAll();
+    syncLog('正在上传本机数据…');
+    await ghFetch(GH_API+'/gists/'+c.gistId,{method:'PATCH',headers:ghHeaders(),body:JSON.stringify({files:objFiles()})});
+    c.lastSync=Date.now(); syncSaveCfg(c);
+    syncLog('✅ 同步完成');
+    if(manual) toast('☁️ 同步完成');
+  }catch(e){
+    syncLog('❌ '+e.message);
+    if(manual) alert('同步失败：'+e.message);
+  }finally{
+    _syncing=false; renderSyncUI();
+  }
+}
+function syncTouch(){          // 记一笔后延迟 2.5 秒自动上传
+  if(!syncReady()) return;
+  clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(function(){ if(!document.hidden) syncNow(false) }, 2500);
+}
+function renderSyncUI(){
+  const c=syncCfg(), on=!!(c.token&&c.gistId);
+  const st=document.getElementById('syncSt'), box=document.getElementById('syncState');
+  const setup=document.getElementById('syncSetup'), onbox=document.getElementById('syncOn');
+  if(!st||!box) return;
+  if(!on){
+    st.textContent='未开启'; st.className='st';
+    box.innerHTML='<span class="sync-dot off"></span>当前：<b>未开启</b> · 数据只在这部手机里，别人看不到';
+    if(setup) setup.style.display='';
+    if(onbox) onbox.style.display='none';
+    return;
+  }
+  if(setup) setup.style.display='none';
+  if(onbox) onbox.style.display='';
+  const t=c.lastSync?new Date(c.lastSync):null;
+  const ts=t?(t.getMonth()+1)+'月'+t.getDate()+'日 '+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'):'—';
+  if(_syncing){
+    st.textContent='同步中'; st.className='st ok';
+    box.innerHTML='<span class="sync-dot"></span>☁️ 正在同步…';
+  }else{
+    st.textContent='已开启'; st.className='st ok';
+    box.innerHTML='<span class="sync-dot"></span>✅ <b>云同步已开启</b> · 上次同步 '+ts;
+  }
+}
+
 /* ================= 通知 / 导入导出 ================= */
 function requestNotify(){
   if(!('Notification' in window)){alert('当前浏览器不支持系统通知');return}
@@ -2505,7 +2843,10 @@ function doImport(e){
   r.onload=()=>{try{
     const d=JSON.parse(r.result);
     if(!d.feedings) throw new Error('bad');
-    S=d; save(); renderAll(); alert('导入成功！');
+    delete d.__u;               // 同步元数据重建，避免与导入数据错乱
+    S=d; save(); renderAll();
+    renderSyncUI();
+    alert('导入成功！'+(syncReady()?'（下一次同步会上传到云端）':''));
   }catch(err){alert('文件格式不对，导入失败')}};
   r.readAsText(f);
   e.target.value='';
@@ -2538,8 +2879,25 @@ fillVaxSel();
 document.getElementById('card-feed').classList.add('open');
 document.getElementById('feedTime').value=nowInput(); // 只在加载时初始化一次，避免刷新覆盖补录时间
 renderAll();
+renderSyncUI();
 checkReminders();
 setInterval(checkReminders, 20000);
+
+/* ☁️ 云同步：打开页面、切回页面、每 2 分钟各自动同步一次 */
+(function(){
+  if(!syncReady()) return;
+  setTimeout(function(){ syncNow(false) }, 1200);
+  document.addEventListener('visibilitychange', function(){
+    if(!syncReady()) return;
+    if(document.hidden){ clearTimeout(_syncTimer); syncNow(false); }        // 切走前先传一次
+    else if(Date.now()-(syncCfg().lastSync||0) > 5000) syncNow(false);      // 切回来拉一次
+  });
+  window.addEventListener('online', function(){ if(syncReady()) syncNow(false) });
+  setInterval(function(){
+    if(document.hidden || !syncReady()) return;
+    if(Date.now()-(syncCfg().lastSync||0) > 120000) syncNow(false);
+  }, 30000);
+})();
 
 /* ===== APP 模式 tab 切换 ===== */
 function goTab(v, anchor){
