@@ -112,6 +112,11 @@ input[type=number]{width:84px}
 .st.ok{color:#2E9E63;font-weight:700}
 .sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2E9E63;margin-right:5px;vertical-align:middle}
 .sync-dot.off{background:#C9BDB4}
+.sync-dot.bad-dot{background:#D9480F}
+.sync-dot.warn-dot{background:#E8940C}
+.st.bad{color:#fff;font-weight:700;background:#D9480F}
+.st.warn{color:#8A5A00;font-weight:700;background:#FFE9BE}
+.sync-warn{font-size:12px;line-height:1.8;color:#8A4B00;background:#FFF4E6;border:1px solid #FFD8A8;border-radius:8px;padding:8px 10px;margin:8px 0}
 .sync-log{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6;word-break:break-all}
 .amount-chips{display:flex;gap:8px}
 .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}
@@ -700,6 +705,11 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
           <b>②</b> 把令牌粘到下面，点「开启云同步」。<br>
           <b>③</b> 家人手机打开同一个网址，粘<b>同一个令牌</b>再点一次开启 —— 两台手机就通了。
         </p>
+        <div id="syncChangeTip" style="display:none;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.8;margin-bottom:8px">
+          🔑 <b>正在更换令牌</b>：云端数据<b>原封不动</b>，换完接着用。<br>
+          ⚠️ 新令牌必须用<b>同一个 GitHub 账号</b>生成，否则会找不到原来的数据。
+        </div>
+        <p class="sync-warn">⏳ <b>重要：生成时 Expiration（有效期）一定要选 No expiration（无期限）</b>。选了 7 天 / 30 天的话，到期后所有手机会同时停止同步。</p>
         <input type="text" id="syncToken" class="sync-input" placeholder="在这里粘贴 GitHub 令牌" autocomplete="off" spellcheck="false">
         <div class="row" style="margin-top:8px">
           <button class="btn btn-primary" onclick="syncConnect()">🚀 开启云同步</button>
@@ -708,6 +718,7 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
       <div id="syncOn" style="display:none">
         <div class="row" style="margin-top:2px">
           <button class="btn btn-outline btn-sm" onclick="syncNow(true)">🔄 立即同步</button>
+          <button class="btn btn-outline btn-sm" onclick="syncChangeToken()">🔑 换令牌</button>
           <button class="btn btn-outline btn-sm" onclick="syncDisconnect()">⏏ 关闭</button>
         </div>
         <p class="mini-stat" style="margin-top:10px;line-height:1.9">
@@ -716,6 +727,10 @@ header{position:sticky;top:0;z-index:50;background:#fffdf8;backdrop-filter:blur(
           📌 家人的手机：打开同一网址，粘<b>同一个令牌</b>点一下开启即可加入。<br>
           📌 万一没网，数据先存在本机，联网后自动补传。
         </p>
+        <div class="row" style="margin-top:6px">
+          <span class="mini-stat" id="syncGistId" onclick="syncCopyId()" style="cursor:pointer;text-decoration:underline"></span>
+          <button class="btn btn-outline btn-sm" onclick="syncSetId()">📋 手动填编号</button>
+        </div>
         <div class="sync-log" id="syncLog"></div>
       </div>
     </div>
@@ -2744,9 +2759,16 @@ function ghHeaders(){
   return {'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
 }
 async function ghFetch(url,opt){
-  const r=await fetch(url,opt);
-  if(r.status===401||r.status===403) throw new Error('令牌无效或权限不足（需要勾选 gist）');
+  let r;
+  try{ r=await fetch(url,opt) }
+  catch(e){ throw new Error('连不上 GitHub（检查网络 / 能否打开 github.com）') }
+  if(r.status===401||r.status===403){
+    const c=syncCfg(); c.bad=true; c.badAt=Date.now(); syncSaveCfg(c);
+    throw new Error('令牌已失效或权限不足（生成时要勾选 gist）');
+  }
   if(!r.ok) throw new Error('GitHub 返回 '+r.status);
+  const c2=syncCfg();
+  if(c2.bad){ delete c2.bad; delete c2.badAt; syncSaveCfg(c2) }
   return r.json();
 }
 function syncLog(msg){
@@ -2763,8 +2785,10 @@ async function syncConnect(){
   const btn=document.querySelector('#syncSetup .btn-primary');
   if(btn){ btn.disabled=true; btn.textContent='连接中…' }
   syncLog('正在连接 GitHub…');
+  const prev=syncCfg();
+  const wasBad=!!prev.bad, keepId=prev.gistId||'';
   try{
-    const c=syncCfg(); c.token=t; syncSaveCfg(c);
+    const c=syncCfg(); c.token=t; delete c.bad; delete c.badAt; syncSaveCfg(c);
     let id=c.gistId;
     if(!id){
       const list=await ghFetch(GH_API+'/gists?per_page=100',{headers:ghHeaders()});
@@ -2781,14 +2805,32 @@ async function syncConnect(){
       return;
     }
     c.gistId=id; syncSaveCfg(c);
+    if(inp) inp.value='';
     renderSyncUI();
     await syncNow(true);
+    const after=syncCfg();
+    if(!after.bad){
+      if(wasBad||keepId) toast('🔑 新令牌已生效\n云端数据原封不动');
+    }
   }catch(e){
     syncLog('连接失败：'+e.message);
-    alert('连接失败：'+e.message+'\n\n请检查：\n1. 生成令牌时是否勾选了 gist\n2. 这台设备能否打开 github.com');
+    alert('连接失败：'+e.message+'\n\n请检查：\n1. 生成令牌时是否勾选了 gist\n2. 新令牌是否用同一个 GitHub 账号生成\n3. 这台设备能否打开 github.com');
   }finally{
     if(btn){ btn.disabled=false; btn.textContent='🚀 开启云同步' }
   }
+}
+/* 只换令牌：保留云端编号，数据不受影响 */
+function syncChangeToken(){
+  const setup=document.getElementById('syncSetup'), onbox=document.getElementById('syncOn');
+  const tip=document.getElementById('syncChangeTip');
+  if(tip) tip.style.display='';
+  if(setup) setup.style.display='';
+  if(onbox) onbox.style.display='none';
+  const inp=document.getElementById('syncToken');
+  if(inp){ inp.value=''; inp.focus() }
+  const h=document.querySelector('#card-sync .card-head');
+  if(h&&h.className.indexOf('open')<0) h.click();
+  syncLog('等待输入新令牌（云端数据不会丢）');
 }
 function syncDisconnect(){
   if(!confirm('关闭后这台手机不再自动同步（本机数据保留，云端数据不会删除）。确定关闭？')) return;
@@ -2823,12 +2865,17 @@ async function syncNow(manual){
     stampAll();
     syncLog('正在上传本机数据…');
     await ghFetch(GH_API+'/gists/'+c.gistId,{method:'PATCH',headers:ghHeaders(),body:JSON.stringify({files:objFiles()})});
-    c.lastSync=Date.now(); syncSaveCfg(c);
+    c.lastSync=Date.now(); c.fails=0; delete c.badNotified; syncSaveCfg(c);
     syncLog('✅ 同步完成');
     if(manual) toast('☁️ 同步完成');
   }catch(e){
     syncLog('❌ '+e.message);
-    if(manual) alert('同步失败：'+e.message);
+    const c2=syncCfg(); c2.fails=(c2.fails||0)+1; syncSaveCfg(c2);
+    if(manual){ alert('同步失败：'+e.message) }
+    else if(c2.fails>=2 && !c2.badNotified){
+      c2.badNotified=true; syncSaveCfg(c2);
+      toast('☁️ 同步连续失败了\n去「⚙️ 更多 → 云同步」看原因');
+    }
   }finally{
     _syncing=false; renderSyncUI();
   }
@@ -2857,10 +2904,40 @@ function renderSyncUI(){
   if(_syncing){
     st.textContent='同步中'; st.className='st ok';
     box.innerHTML='<span class="sync-dot"></span>☁️ 正在同步…';
+  }else if(c.bad){
+    st.textContent='令牌失效'; st.className='st bad';
+    box.innerHTML='<span class="sync-dot bad-dot"></span>🔑 <b>令牌已失效，现在没有在同步</b><br>'
+      +'<span style="font-size:12px;color:var(--muted)">上次成功同步：'+ts+'。重新生成一个<b>无期限</b>的令牌粘进来即可，云端数据不会丢。</span>';
+  }else if(!c.lastSync || Date.now()-c.lastSync > 36*3600*1000){
+    st.textContent='待检查'; st.className='st warn';
+    box.innerHTML='<span class="sync-dot warn-dot"></span>⚠️ <b>已超过 36 小时没成功同步</b><br>'
+      +'<span style="font-size:12px;color:var(--muted)">上次成功同步：'+ts+'。点「立即同步」试试；若报错就是令牌过期了。</span>';
   }else{
     st.textContent='已开启'; st.className='st ok';
     box.innerHTML='<span class="sync-dot"></span>✅ <b>云同步已开启</b> · 上次同步 '+ts;
   }
+  const gid=document.getElementById('syncGistId');
+  if(gid) gid.textContent=c.gistId?('云端编号 '+c.gistId.slice(0,8)+'…'):'';
+}
+function syncCopyId(){
+  const c=syncCfg();
+  if(!c.gistId){ toast('还没开启云同步'); return }
+  const s=c.gistId;
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(s); toast('云端编号已复制：\n'+s) }
+    else{ prompt('复制这个编号（换手机时可手动填）：', s) }
+  }catch(e){ prompt('复制这个编号（换手机时可手动填）：', s) }
+}
+/* 兜底：换手机后自动找不到云端时，手动填编号 */
+function syncSetId(){
+  const c=syncCfg();
+  const v=prompt('粘贴云端编号（在原来那部手机的点「云端编号」可复制）：', c.gistId||'');
+  if(v===null) return;
+  const id=v.trim();
+  if(!id){ alert('没填编号'); return }
+  c.gistId=id; delete c.bad; syncSaveCfg(c);
+  renderSyncUI(); syncLog('已指定云端编号，正在验证…');
+  syncNow(true);
 }
 
 /* ================= 通知 / 导入导出 ================= */
