@@ -2563,6 +2563,14 @@ function _tOf(it){
   if(it.date){ const t=Date.parse(it.date+'T12:00:00'); if(!isNaN(t)) return t }
   return 0;
 }
+// {活动类型:次数} / {项目:true} 这种"小格子"结构：得逐格合并，
+// 否则两台手机各自记了不同项目，后同步的会整块盖掉先记的
+function _isLeafMap(v){
+  if(!v||typeof v!=='object'||Array.isArray(v)) return false;
+  const ks=Object.keys(v);
+  if(!ks.length) return false;
+  return ks.every(k=>typeof v[k]==='number'||typeof v[k]==='boolean');
+}
 
 /* --- 自动给每条记录打「最后修改时间」：内容一变，时间就更新 --- */
 function stampAll(){
@@ -2594,21 +2602,35 @@ function stampAll(){
       Object.keys(o).forEach(dk=>{
         const v=o[dk];
         if(v===null||v===undefined) return;
-        const h=_hash(_sig(v));
-        const m=M[dk];
-        if(!m) M[dk]={u:now,h:h};
-        else if(m.h!==h){ m.h=h; m.u=now }
+        if(_isLeafMap(v)){                       // 逐格记时间：翻身 2 次、抓握 3 次互不影响
+          if(!M[dk]) M[dk]={u:0,h:'',sub:{}};
+          if(!M[dk].sub) M[dk].sub={};
+          let mx=0;
+          Object.keys(v).forEach(sk=>{
+            const sh=_hash(_sig(v[sk]));
+            const sm=M[dk].sub[sk];
+            if(!sm) M[dk].sub[sk]={u:now,h:sh};
+            else if(sm.h!==sh){ sm.h=sh; sm.u=now }
+            if((M[dk].sub[sk].u||0)>mx) mx=M[dk].sub[sk].u||0;
+          });
+          M[dk].h=_hash(_sig(v)); M[dk].u=mx;
+        }else{
+          const h=_hash(_sig(v));
+          const m=M[dk];
+          if(!m) M[dk]={u:now,h:h};
+          else if(m.h!==h){ m.h=h; m.u=now }
+        }
       });
     });
     ['baby','sleeping'].forEach(k=>{
       const h=_hash(_sig(S[k]===undefined?null:S[k]));
-      if(!U.s[k]) U.s[k]={u:now,h:h};
+      if(!U.s[k]) U.s[k]={u:0,h:h};   // 从没改过的默认值时间戳为 0：云端只要有内容就能覆盖它
       else if(U.s[k].h!==h){ U.s[k].h=h; U.s[k].u=now }
     });
     (Array.isArray(S.vaccines)?S.vaccines:[]).forEach(v=>{
       if(!v||!v.name) return;
       const h=_hash(_sig(v));
-      if(!U.v[v.name]) U.v[v.name]={u:now,h:h};
+      if(!U.v[v.name]) U.v[v.name]={u:0,h:h};   // 同理：没接种过的空白记录不抢占
       else if(U.v[v.name].h!==h){ U.v[v.name].h=h; U.v[v.name].u=now }
     });
   }catch(e){ console.warn('stampAll',e) }
@@ -2656,11 +2678,31 @@ function mergeRemote(R){
     const ro=(R[k]&&typeof R[k]==='object')?R[k]:{};
     const lm=U.o[k]||{}, rm=ro_[k]||{};
     const keys={}; Object.keys(lo).forEach(i=>keys[i]=1); Object.keys(ro).forEach(i=>keys[i]=1);
+    Object.keys(lm).forEach(i=>keys[i]=1); Object.keys(rm).forEach(i=>keys[i]=1);
     const mo={}, nm={};
     Object.keys(keys).forEach(dk=>{
+      const lv=lo[dk], rv=ro[dk];
       const L=lm[dk], Rr=rm[dk];
+      if(_isLeafMap(lv)||_isLeafMap(rv)||(L&&L.sub)||(Rr&&Rr.sub)){
+        const lsub=(L&&L.sub)||{}, rsub=(Rr&&Rr.sub)||{};
+        const subs={};
+        Object.keys(lv||{}).forEach(i=>subs[i]=1); Object.keys(rv||{}).forEach(i=>subs[i]=1);
+        Object.keys(lsub).forEach(i=>subs[i]=1); Object.keys(rsub).forEach(i=>subs[i]=1);
+        const vo={}, nsub={}; let mx=0;
+        Object.keys(subs).forEach(sk=>{
+          const a=lsub[sk], b=rsub[sk];
+          const au=a?(a.u||0):0, bu=b?(b.u||0):0;
+          const v=(bu>au)?((rv||{})[sk]):((lv||{})[sk]);
+          if(v!==undefined&&v!==null) vo[sk]=v;
+          const meta=(bu>au)?b:a;
+          if(meta){ nsub[sk]={u:meta.u||0,h:meta.h||''}; if((meta.u||0)>mx) mx=meta.u||0 }
+          if(bu>au) ch++;
+        });
+        if(Object.keys(vo).length){ mo[dk]=vo; nm[dk]={u:mx,h:'',sub:nsub} }
+        return;
+      }
       const lu=L?(L.u||0):0, ru=Rr?(Rr.u||0):0;
-      const v=(ru>lu)?ro[dk]:lo[dk];
+      const v=(ru>lu)?rv:lv;
       if(v!==undefined&&v!==null){ mo[dk]=v; nm[dk]=(ru>lu)?{u:ru,h:(Rr&&Rr.h)||''}:{u:L?lu:Date.now(),h:(L&&L.h)||''} }
       if(ru>lu) ch++;
     });
